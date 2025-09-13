@@ -23,6 +23,7 @@ export type AuthStep =
   | 'signin' 
   | 'signup' 
   | 'verify-email' 
+  | 'onboarding-personalize'
   | 'onboarding-location'
   | 'onboarding-profile'
   | 'onboarding-interests'

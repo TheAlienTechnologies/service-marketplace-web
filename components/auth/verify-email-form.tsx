@@ -60,7 +60,7 @@ export function VerifyEmailForm() {
     
     try {
       await mockAuth.verifyEmail(email, verificationCode);
-      setAuthStep('onboarding-location');
+      setAuthStep('onboarding-personalize');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Verification failed');
       setCode(['', '', '', '', '', '']);

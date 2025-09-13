@@ -5,6 +5,7 @@ import { Modal } from '@/components/ui/modal';
 import { SignInForm } from './sign-in-form';
 import { SignUpForm } from './sign-up-form';
 import { VerifyEmailForm } from './verify-email-form';
+import { PersonalizationForm } from './onboarding/personalization-form';
 import { OnboardingLocationForm } from './onboarding/location-form';
 import { OnboardingProfileForm } from './onboarding/profile-form';
 import { OnboardingInterestsForm } from './onboarding/interests-form';
@@ -20,6 +21,8 @@ export function AuthModal() {
         return <SignUpForm />;
       case 'verify-email':
         return <VerifyEmailForm />;
+      case 'onboarding-personalize':
+        return <PersonalizationForm />;
       case 'onboarding-location':
         return <OnboardingLocationForm />;
       case 'onboarding-profile':
@@ -35,6 +38,9 @@ export function AuthModal() {
   const getModalWidth = () => {
     if (authStep === 'onboarding-interests') {
       return 'max-w-2xl'; // Wider for interests tags
+    }
+    if (authStep === 'onboarding-personalize') {
+      return 'max-w-2xl'; // Wider for personalization title
     }
     return 'max-w-md'; // Default width for other steps
   };
