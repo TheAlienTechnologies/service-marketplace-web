@@ -59,7 +59,7 @@ export function Modal({
       
       {/* Modal content */}
       <div className={`
-        relative z-10 w-full max-w-md mx-4 
+        relative z-10 w-full mx-4 
         bg-white dark:bg-gray-900 
         rounded-2xl shadow-2xl
         max-h-[90vh] overflow-y-auto

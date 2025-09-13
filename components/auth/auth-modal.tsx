@@ -31,12 +31,20 @@ export function AuthModal() {
     }
   };
 
+  // Determine modal width based on the current step
+  const getModalWidth = () => {
+    if (authStep === 'onboarding-interests') {
+      return 'max-w-2xl'; // Wider for interests tags
+    }
+    return 'max-w-md'; // Default width for other steps
+  };
+
   return (
     <Modal
       isOpen={showAuthModal}
       onClose={hideAuth}
       showCloseButton={!authStep.startsWith('onboarding')}
-      className="max-w-md"
+      className={getModalWidth()}
     >
       {renderAuthStep()}
     </Modal>
