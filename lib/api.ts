@@ -45,7 +45,16 @@ class ApiService {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        // Handle specific error format from the backend
+        if (data.message) {
+          // Create a custom error with additional properties if available
+          const error = new Error(data.message);
+          if (data.attemptsLeft !== undefined) {
+            (error as any).attemptsLeft = data.attemptsLeft;
+          }
+          throw error;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       return data;
@@ -259,6 +268,38 @@ class ApiService {
     // Clear tokens
     localStorage.removeItem('auth_token');
     localStorage.removeItem('refresh_token');
+  }
+
+  // Forgot password flow
+  async forgotPassword(email: string): Promise<void> {
+    await this.request('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+      }),
+    });
+  }
+
+  async verifyPasswordResetOtp(email: string, otpCode: string): Promise<{ valid: boolean }> {
+    const response = await this.request<{ valid: boolean }>('/auth/verify-password-reset-otp', {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        otpCode,
+      }),
+    });
+    return response.data;
+  }
+
+  async resetPassword(email: string, otpCode: string, newPassword: string): Promise<void> {
+    await this.request('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        otpCode,
+        newPassword,
+      }),
+    });
   }
 
   // Social auth

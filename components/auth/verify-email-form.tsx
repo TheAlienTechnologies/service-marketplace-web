@@ -101,8 +101,12 @@ export function VerifyEmailForm() {
     <div className="p-8">
       {/* Logo and Header */}
       <div className="text-center">
-        <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center mx-auto mb-4">
-          <div className="w-6 h-6 bg-white rounded-sm transform rotate-45"></div>
+        <div className="w-16 h-16 mx-auto mb-4">
+          <img 
+            src="/assets/logo/logo.svg" 
+            alt="Pavodah Logo" 
+            className="w-full h-full"
+          />
         </div>
         <h1 className="text-[30px] font-bold leading-[38px] text-gray-900 dark:text-white font-inter tracking-[0%] mb-2">
           Please Verify your Email Address

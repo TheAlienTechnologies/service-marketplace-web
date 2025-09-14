@@ -13,11 +13,15 @@ export function Header() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-              <div className="w-4 h-4 bg-white rounded-sm transform rotate-45"></div>
+            <div className="w-8 h-8">
+              <img 
+                src="/assets/logo/logo.svg" 
+                alt="Pavodah Logo" 
+                className="w-full h-full"
+              />
             </div>
             <span className="ml-3 text-xl font-semibold text-gray-900 dark:text-white">
-              AVADgh
+              Pavodah
             </span>
           </div>
 

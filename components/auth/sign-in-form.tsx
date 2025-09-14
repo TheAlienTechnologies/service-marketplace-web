@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/store/auth-store';
@@ -13,7 +12,7 @@ import { toast } from 'react-toastify';
 import { getNextOnboardingStep, needsOnboarding, getOnboardingStepMessage, getOnboardingStatus } from '@/lib/field-based-onboarding';
 
 const signInSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+  email: z.email({ message: 'Please enter a valid email address' }),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
@@ -130,8 +129,12 @@ export function SignInForm() {
     <div className="p-8">
       {/* Logo and Header */}
       <div className="text-center mb-8">
-        <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center mx-auto mb-4">
-          <div className="w-6 h-6 bg-white rounded-sm transform rotate-45"></div>
+        <div className="w-16 h-16 mx-auto mb-4">
+          <img 
+            src="/assets/logo/logo.svg" 
+            alt="Pavodah Logo" 
+            className="w-full h-full"
+          />
         </div>
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
           Welcome to Pavodah
@@ -229,7 +232,9 @@ export function SignInForm() {
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <span className="text-sm text-green-600 hover:text-green-700">
+                {showPassword ? 'Hide' : 'Show'}
+              </span>
             </button>
           </div>
           {errors.password && (
@@ -241,6 +246,7 @@ export function SignInForm() {
         <div className="text-right">
           <button
             type="button"
+            onClick={() => setAuthStep('forgot-password')}
             className="text-sm text-green-600 hover:text-green-700 font-medium"
           >
             Forgot password?
