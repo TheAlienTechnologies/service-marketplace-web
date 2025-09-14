@@ -1,14 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/auth-store';
-import { mockServiceCategories } from '@/lib/mock-data';
+import { apiService } from '@/lib/api';
+import { toast } from 'react-toastify';
+import { Category } from '@/types/auth';
 
 export function OnboardingInterestsForm() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const { setUser, hideAuth, setAuthStep } = useAuthStore();
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await apiService.getCategories();
+        console.log('Categories API response:', response);
+        console.log('Categories array:', response.categories);
+        setCategories(response.categories || []);
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+        toast.error('Failed to load service categories');
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const toggleCategory = (categoryId: string) => {
     setSelectedCategories(prev => 
@@ -19,23 +42,29 @@ export function OnboardingInterestsForm() {
   };
 
   const handleFinish = async () => {
+    if (selectedCategories.length === 0) {
+      toast.error('Please select at least one service category');
+      return;
+    }
+
     setIsLoading(true);
-    // Mock API call to complete onboarding
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock user with completed onboarding
-    setUser({
-      id: '1',
-      email: 'joel.sm13@gmail.com',
-      firstName: 'Joel',
-      lastName: 'Smith',
-      role: 'USER',
-      hasCompletedOnboarding: true,
-      profileCompleteness: 100,
-    });
-    
-    hideAuth();
-    setIsLoading(false);
+    try {
+      // Save user interests
+      await apiService.updateInterests(selectedCategories, 'INTEREST');
+      
+      // Get updated user profile
+      const profileResult = await apiService.getProfile();
+      setUser(profileResult.user);
+      
+      toast.success('Interests saved successfully! Welcome to Pavodah!');
+      hideAuth();
+    } catch (error) {
+      console.error('Failed to save interests:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save interests';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handlePrevious = () => {
@@ -61,57 +90,47 @@ export function OnboardingInterestsForm() {
 
       {/* Service Categories */}
       <div className="mb-8">
-        <div className="flex flex-wrap gap-3">
-          {mockServiceCategories.slice(0, 11).map((category) => (
-            <button
-              key={category.id}
-              type="button"
-              onClick={() => toggleCategory(category.id)}
-              className={`
-                inline-flex items-center px-4 py-2 rounded-full text-sm font-medium transition-all
-                ${selectedCategories.includes(category.id)
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                }
-              `}
-            >
-              {selectedCategories.includes(category.id) ? (
-                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                </svg>
-              )}
-              {category.name}
-            </button>
-          ))}
-          
-          {/* Other Option */}
-          <button
-            type="button"
-            onClick={() => toggleCategory('other')}
-            className={`
-              inline-flex items-center px-4 py-2 rounded-full text-sm font-medium transition-all
-              ${selectedCategories.includes('other')
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-              }
-            `}
-          >
-            {selectedCategories.includes('other') ? (
-              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-            ) : (
-              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-              </svg>
-            )}
-            Other...
-          </button>
-        </div>
+        {isLoadingCategories ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+            <span className="ml-3 text-gray-600 dark:text-gray-400">Loading categories...</span>
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="text-center">
+              <p className="text-gray-600 dark:text-gray-400 mb-2">No service categories available</p>
+              <p className="text-sm text-gray-500 dark:text-gray-500">Please try refreshing the page</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-3">
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                type="button"
+                onClick={() => toggleCategory(category.id)}
+                className={`
+                  inline-flex items-center px-4 py-2 rounded-full text-sm font-medium transition-all
+                  ${selectedCategories.includes(category.id)
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }
+                `}
+              >
+                {selectedCategories.includes(category.id) ? (
+                  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                  </svg>
+                )}
+                {category.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Navigation Buttons */}
@@ -127,10 +146,10 @@ export function OnboardingInterestsForm() {
         
         <Button
           onClick={handleFinish}
-          disabled={selectedCategories.length === 0 || isLoading}
+          disabled={selectedCategories.length === 0 || isLoading || isLoadingCategories}
           className="bg-green-600 hover:bg-green-700 text-white font-medium px-6"
         >
-          {isLoading ? 'Finishing...' : 'Finish →'}
+          {isLoading ? 'Saving...' : isLoadingCategories ? 'Loading...' : 'Finish →'}
         </Button>
       </div>
     </div>

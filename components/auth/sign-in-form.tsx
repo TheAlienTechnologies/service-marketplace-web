@@ -8,7 +8,9 @@ import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/store/auth-store';
-import { mockAuth } from '@/lib/mock-data';
+import { apiService } from '@/lib/api';
+import { toast } from 'react-toastify';
+import { getNextOnboardingStep, needsOnboarding, getOnboardingStepMessage, getOnboardingStatus } from '@/lib/field-based-onboarding';
 
 const signInSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -34,21 +36,94 @@ export function SignInForm() {
   const onSubmit = async (data: SignInFormData) => {
     setIsLoading(true);
     try {
-      const result = await mockAuth.signIn(data.email, data.password);
-      setUser(result.user);
-      hideAuth();
+      const result = await apiService.signIn(data);
+      
+      // Get user profile after successful login
+      const profileResult = await apiService.getProfile();
+      setUser(profileResult.user);
+      
+      // Check comprehensive onboarding status using field-based validation
+      const onboardingStatus = await getOnboardingStatus();
+      
+      if (!onboardingStatus) {
+        // Fallback if we can't get status - assume onboarding needed
+        toast.success('Welcome back! Please complete your profile setup.');
+        setAuthStep('onboarding-personalize');
+        return;
+      }
+      
+      if (!onboardingStatus.isComplete) {
+        // User has incomplete onboarding
+        const nextStep = onboardingStatus.nextRequiredStep;
+        
+        if (nextStep) {
+          // Map backend step to frontend step
+          const frontendStep = mapBackendStepToFrontendStep(nextStep);
+          const stepMessage = getOnboardingStepMessage(frontendStep);
+          const completionPercentage = Math.round(onboardingStatus.completionPercentage);
+          
+          // Special handling for email verification
+          if (nextStep === 'email_verification') {
+            toast.info('Please verify your email address to continue.');
+            setAuthStep('verify-email');
+          } else {
+            toast.success(`Welcome back! Your profile is ${completionPercentage}% complete. ${stepMessage}`);
+            setAuthStep(frontendStep);
+          }
+        } else {
+          // No specific next step, start with personalization
+          toast.success('Welcome back! Let\'s finish setting up your account.');
+          setAuthStep('onboarding-personalize');
+        }
+      } else {
+        // Onboarding is complete
+        toast.success('Welcome back! You have successfully signed in.');
+        hideAuth();
+      }
     } catch (error) {
-      setError('root', { 
-        message: error instanceof Error ? error.message : 'Sign in failed' 
-      });
+      const errorMessage = error instanceof Error ? error.message : 'Sign in failed';
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSocialAuth = (provider: 'google' | 'facebook') => {
-    // Mock social auth
+  // Helper function to map backend steps to frontend steps
+  const mapBackendStepToFrontendStep = (backendStep: string) => {
+    const stepMap: Record<string, any> = {
+      'email_verification': 'verify-email',
+      'basic_profile': 'onboarding-profile',
+      'location': 'onboarding-location',
+      'interests': 'onboarding-interests',
+      'experience': 'onboarding-experience',
+      'verification_documents': 'onboarding-documents',
+    };
+    
+    return stepMap[backendStep] || 'onboarding-personalize';
+  };
+
+  const handleSocialAuth = async (provider: 'google' | 'facebook') => {
+    // TODO: Implement real social auth
+    // For now, this is a placeholder that would follow the same onboarding check pattern
     console.log(`Sign in with ${provider}`);
+    
+    // When implementing real social auth, follow this pattern:
+    /*
+    try {
+      setIsLoading(true);
+      const result = await apiService.socialAuth(provider);
+      const profileResult = await apiService.getProfile();
+      setUser(profileResult.user);
+      
+      // Same onboarding check logic as regular sign-in
+      const onboardingStatus = await getOnboardingStatus();
+      // ... rest of onboarding logic
+    } catch (error) {
+      toast.error(`${provider} sign in failed`);
+    } finally {
+      setIsLoading(false);
+    }
+    */
   };
 
   return (
@@ -172,12 +247,6 @@ export function SignInForm() {
           </button>
         </div>
 
-        {/* Error Message */}
-        {errors.root && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{errors.root.message}</p>
-          </div>
-        )}
 
         {/* Submit Button */}
         <Button

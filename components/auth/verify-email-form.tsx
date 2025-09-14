@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/auth-store';
-import { mockAuth } from '@/lib/mock-data';
+import { apiService } from '@/lib/api';
+import { toast } from 'react-toastify';
 
 export function VerifyEmailForm() {
   const [code, setCode] = useState(['', '', '', '', '', '']);
@@ -12,10 +13,10 @@ export function VerifyEmailForm() {
   const [error, setError] = useState('');
   const [timeLeft, setTimeLeft] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const { setAuthStep } = useAuthStore();
+  const { setAuthStep, user } = useAuthStore();
 
-  // Mock email for display
-  const email = 'joel.sm13@gmail.com';
+  // Get email from user or use fallback
+  const email = user?.email || 'your-email@example.com';
 
   useEffect(() => {
     // Focus first input on mount
@@ -59,10 +60,13 @@ export function VerifyEmailForm() {
     setError('');
     
     try {
-      await mockAuth.verifyEmail(email, verificationCode);
+      await apiService.verifyEmail(email, verificationCode);
+      toast.success('Email verified successfully!');
       setAuthStep('onboarding-personalize');
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Verification failed');
+      const errorMessage = error instanceof Error ? error.message : 'Verification failed';
+      toast.error(errorMessage);
+      setError(errorMessage);
       setCode(['', '', '', '', '', '']);
       inputRefs.current[0]?.focus();
     } finally {
@@ -75,10 +79,13 @@ export function VerifyEmailForm() {
     setError('');
     
     try {
-      await mockAuth.resendVerification(email);
+      await apiService.resendEmailVerification(email);
+      toast.success('Verification code sent to your email');
       setTimeLeft(119); // 1:59
     } catch (error) {
-      setError('Failed to resend verification code');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to resend verification code';
+      toast.error(errorMessage);
+      setError(errorMessage);
     } finally {
       setIsResending(false);
     }
@@ -118,7 +125,7 @@ export function VerifyEmailForm() {
           {code.map((digit, index) => (
             <div key={index} className="flex items-center">
               <input
-                ref={(el) => (inputRefs.current[index] = el)}
+                ref={(el) => { inputRefs.current[index] = el; }}
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"

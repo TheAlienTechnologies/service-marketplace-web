@@ -1,6 +1,7 @@
 export interface User {
   id: string;
   email: string;
+  emailVerified: boolean;
   firstName?: string;
   lastName?: string;
   displayName?: string;
@@ -65,6 +66,13 @@ export interface ServiceCategory {
   icon: string;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+}
+
 export interface OnboardingInterestsData {
   categories: string[];
 }
@@ -75,4 +83,21 @@ export interface OnboardingExperienceData {
 
 export interface OnboardingDocumentsData {
   documents: File[];
+}
+
+export interface OnboardingStep {
+  step: string;
+  required: boolean;
+  completed: boolean;
+  label: string;
+  description: string;
+}
+
+export interface OnboardingStatus {
+  isComplete: boolean;
+  nextRequiredStep?: string;
+  completedSteps: string[];
+  requiredSteps: string[];
+  steps: OnboardingStep[];
+  completionPercentage: number;
 }

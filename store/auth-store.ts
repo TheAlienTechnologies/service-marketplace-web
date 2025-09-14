@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AuthState, AuthStep, User } from '@/types/auth';
+import { apiService } from '@/lib/api';
 
 interface AuthStore extends AuthState {
   // Actions
@@ -41,11 +42,14 @@ export const useAuthStore = create<AuthStore>()(
 
       setAuthStep: (authStep) => set({ authStep }),
 
-      signOut: () => set({ 
-        user: null, 
-        isAuthenticated: false,
-        showAuthModal: false 
-      }),
+      signOut: async () => {
+        await apiService.signOut();
+        set({ 
+          user: null, 
+          isAuthenticated: false,
+          showAuthModal: false 
+        });
+      },
     }),
     {
       name: 'auth-storage',

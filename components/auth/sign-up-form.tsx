@@ -8,7 +8,8 @@ import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/store/auth-store';
-import { mockAuth } from '@/lib/mock-data';
+import { apiService } from '@/lib/api';
+import { toast } from 'react-toastify';
 
 const signUpSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -40,12 +41,12 @@ export function SignUpForm() {
   const onSubmit = async (data: SignUpFormData) => {
     setIsLoading(true);
     try {
-      await mockAuth.signUp(data.email, data.password);
+      await apiService.signUp(data);
+      toast.success('Account created successfully! Please check your email for verification.');
       setAuthStep('verify-email');
     } catch (error) {
-      setError('root', { 
-        message: error instanceof Error ? error.message : 'Sign up failed' 
-      });
+      const errorMessage = error instanceof Error ? error.message : 'Sign up failed';
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -197,12 +198,6 @@ export function SignUpForm() {
           )}
         </div>
 
-        {/* Error Message */}
-        {errors.root && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{errors.root.message}</p>
-          </div>
-        )}
 
         {/* Submit Button */}
         <Button

@@ -40,7 +40,10 @@ export function AuthModal() {
       return 'max-w-2xl'; // Wider for interests tags
     }
     if (authStep === 'onboarding-personalize') {
-      return 'max-w-2xl'; // Wider for personalization title
+      return 'max-w-xl'; // Wider for personalization title
+    }
+    if (authStep === 'onboarding-profile') {
+      return 'max-w-xl'; // Wider for profile form
     }
     return 'max-w-md'; // Default width for other steps
   };
