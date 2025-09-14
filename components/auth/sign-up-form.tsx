@@ -11,7 +11,7 @@ import { apiService } from '@/lib/api';
 import { toast } from 'react-toastify';
 
 const signUpSchema = z.object({
-  email: z.email({ message: 'Please enter a valid email address' }),
+  email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string().min(6, 'Please confirm your password'),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -25,7 +25,7 @@ export function SignUpForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { setAuthStep } = useAuthStore();
+  const { setAuthStep, setUser } = useAuthStore();
 
   const {
     register,
@@ -40,7 +40,13 @@ export function SignUpForm() {
   const onSubmit = async (data: SignUpFormData) => {
     setIsLoading(true);
     try {
-      await apiService.signUp(data);
+      const result = await apiService.signUp(data);
+      
+      // Store user data in auth store so we have the email for verification
+      if (result.user) {
+        setUser(result.user);
+      }
+      
       toast.success('Account created successfully! Please check your email for verification.');
       setAuthStep('verify-email');
     } catch (error) {

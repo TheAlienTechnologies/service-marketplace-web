@@ -11,7 +11,7 @@ import { apiService } from '@/lib/api';
 import { toast } from 'react-toastify';
 
 const forgotPasswordSchema = z.object({
-  email: z.email({ message: 'Please enter a valid email address' }),
+  email: z.string().email('Please enter a valid email address' ),
 });
 
 type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;

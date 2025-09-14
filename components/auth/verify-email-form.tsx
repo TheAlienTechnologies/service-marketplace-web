@@ -15,7 +15,7 @@ export function VerifyEmailForm() {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const { setAuthStep, user } = useAuthStore();
 
-  // Get email from user or use fallback
+  // Get email from user - should always be available after signup
   const email = user?.email || 'your-email@example.com';
 
   useEffect(() => {
@@ -114,7 +114,7 @@ export function VerifyEmailForm() {
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-8">
           We've sent a verification code to your email address{' '}
           <span className="font-medium text-gray-900 dark:text-white">
-            {email}
+            {email || 'your email'}
           </span>
           . Enter the code in the next 20 minutes.
         </p>

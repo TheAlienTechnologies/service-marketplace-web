@@ -12,7 +12,7 @@ import { toast } from 'react-toastify';
 import { getNextOnboardingStep, needsOnboarding, getOnboardingStepMessage, getOnboardingStatus } from '@/lib/field-based-onboarding';
 
 const signInSchema = z.object({
-  email: z.email({ message: 'Please enter a valid email address' }),
+  email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
