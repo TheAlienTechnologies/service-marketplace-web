@@ -78,6 +78,34 @@ export const PROVIDER_AUTH_STEPS: ProviderAuthStep[] = [
   'provider-submitted'
 ];
 
+// Mapping function to convert backend onboarding steps to frontend steps
+export function mapBackendStepToFrontendStep(
+  backendStep: string, 
+  userRole: 'USER' | 'SERVICE_PROVIDER' | 'ADMIN'
+): UserAuthStep | ProviderAuthStep {
+  if (userRole === 'SERVICE_PROVIDER') {
+    const providerStepMap: Record<string, ProviderAuthStep> = {
+      'email_verification': 'verify-email',
+      'basic_profile': 'provider-profile',
+      'location': 'provider-coverage', // Provider location step
+      'interests': 'provider-skills', // Map interests to skills for providers
+      'experience': 'provider-experience',
+      'verification_documents': 'provider-documents',
+    };
+    return providerStepMap[backendStep] || 'provider-profile';
+  } else {
+    const userStepMap: Record<string, UserAuthStep> = {
+      'email_verification': 'verify-email',
+      'basic_profile': 'onboarding-profile',
+      'location': 'onboarding-location',
+      'interests': 'onboarding-interests',
+      'experience': 'onboarding-experience',
+      'verification_documents': 'onboarding-documents',
+    };
+    return userStepMap[backendStep] || 'onboarding-personalize';
+  }
+}
+
 export interface SignInData {
   email: string;
   password: string;

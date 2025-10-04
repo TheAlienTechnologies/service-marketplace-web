@@ -83,12 +83,13 @@ class ApiService {
     return response.data;
   }
 
-  async signUp(userData: SignUpData): Promise<AuthResponse> {
+  async signUp(userData: SignUpData & { role?: 'USER' | 'SERVICE_PROVIDER' }): Promise<AuthResponse> {
     const response = await this.request<AuthResponse>('/auth/register', {
       method: 'POST',
       body: JSON.stringify({
         email: userData.email,
         password: userData.password,
+        ...(userData.role && { role: userData.role }),
       }),
     });
 

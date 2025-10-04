@@ -67,12 +67,14 @@ export const useAuthStore = create<AuthStore>()(
       setUserAuthStep: (userAuthStep) => set({ 
         userAuthStep, 
         authFlow: 'user',
+        authStep: 'signup',
         showAuthModal: true 
       }),
 
       setProviderAuthStep: (providerAuthStep) => set({ 
         providerAuthStep, 
         authFlow: 'provider',
+        authStep: 'signup',
         showAuthModal: true 
       }),
 

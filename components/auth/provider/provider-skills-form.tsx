@@ -170,27 +170,49 @@ export function ProviderSkillsForm() {
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="flex flex-wrap gap-3">
             {filteredCategories.map((category) => {
               const IconComponent = getCategoryIcon(category.name);
+              const isSelected = selectedCategories.includes(category.id);
               return (
-                <label
+                <div
                   key={category.id}
-                  className="flex items-center space-x-3 cursor-pointer"
+                  onClick={() => toggleCategory(category.id)}
+                  className={`inline-flex items-center space-x-3 px-4 py-3 rounded-full cursor-pointer transition-all duration-200 ${
+                    isSelected
+                      ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                      : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 hover:border-gray-400 dark:hover:border-gray-500'
+                  }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={selectedCategories.includes(category.id)}
-                    onChange={() => toggleCategory(category.id)}
-                    className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
-                  />
-                  <div className="flex items-center space-x-3">
-                    <IconComponent className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                    <span className="text-gray-900 dark:text-white font-medium">
-                      {category.name}
-                    </span>
+                  {/* Circular checkbox */}
+                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all duration-200 ${
+                    isSelected
+                      ? 'border-green-500 bg-green-500'
+                      : 'border-gray-400 dark:border-gray-500'
+                  }`}>
+                    {isSelected && (
+                      <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
                   </div>
-                </label>
+                  
+                  {/* Icon */}
+                  <IconComponent className={`w-4 h-4 ${
+                    isSelected
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-gray-600 dark:text-gray-400'
+                  }`} />
+                  
+                  {/* Category text */}
+                  <span className={`text-sm font-medium whitespace-nowrap ${
+                    isSelected
+                      ? 'text-green-900 dark:text-green-100'
+                      : 'text-gray-700 dark:text-gray-300'
+                  }`}>
+                    {category.name}
+                  </span>
+                </div>
               );
             })}
           </div>

@@ -10,6 +10,7 @@ import { useAuthStore } from '@/store/auth-store';
 import { apiService } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { getNextOnboardingStep, needsOnboarding, getOnboardingStepMessage, getOnboardingStatus } from '@/lib/field-based-onboarding';
+import { mapBackendStepToFrontendStep } from '@/types/auth';
 
 const signInSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -21,7 +22,7 @@ type SignInFormData = z.infer<typeof signInSchema>;
 export function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { setUser, setAuthStep, hideAuth } = useAuthStore();
+  const { setUser, setAuthStep, hideAuth, setUserAuthStep, setProviderAuthStep } = useAuthStore();
 
   const {
     register,
@@ -41,13 +42,18 @@ export function SignInForm() {
       const profileResult = await apiService.getProfile();
       setUser(profileResult.user);
       
-      // Check comprehensive onboarding status using field-based validation
-      const onboardingStatus = await getOnboardingStatus();
+      try {
+        // Check comprehensive onboarding status using field-based validation
+        const onboardingStatus = await getOnboardingStatus();
       
       if (!onboardingStatus) {
         // Fallback if we can't get status - assume onboarding needed
         toast.success('Welcome back! Please complete your profile setup.');
-        setAuthStep('onboarding-personalize');
+        if (profileResult.user.role === 'SERVICE_PROVIDER') {
+          setProviderAuthStep('provider-profile');
+        } else {
+          setUserAuthStep('onboarding-personalize');
+        }
         return;
       }
       
@@ -56,28 +62,50 @@ export function SignInForm() {
         const nextStep = onboardingStatus.nextRequiredStep;
         
         if (nextStep) {
-          // Map backend step to frontend step
-          const frontendStep = mapBackendStepToFrontendStep(nextStep);
-          const stepMessage = getOnboardingStepMessage(frontendStep);
+          // Map backend step to frontend step based on user role
+          const frontendStep = mapBackendStepToFrontendStep(nextStep, profileResult.user.role);
           const completionPercentage = Math.round(onboardingStatus.completionPercentage);
           
           // Special handling for email verification
           if (nextStep === 'email_verification') {
             toast.info('Please verify your email address to continue.');
-            setAuthStep('verify-email');
+            if (profileResult.user.role === 'SERVICE_PROVIDER') {
+              setProviderAuthStep('verify-email');
+            } else {
+              setUserAuthStep('verify-email');
+            }
           } else {
-            toast.success(`Welcome back! Your profile is ${completionPercentage}% complete. ${stepMessage}`);
-            setAuthStep(frontendStep);
+            toast.success(`Welcome back! Your profile is ${completionPercentage}% complete. Let's continue setting up your account.`);
+            // Use flow-specific methods based on user role
+            if (profileResult.user.role === 'SERVICE_PROVIDER') {
+              setProviderAuthStep(frontendStep as any);
+            } else {
+              setUserAuthStep(frontendStep as any);
+            }
           }
         } else {
-          // No specific next step, start with personalization
+          // No specific next step, start with appropriate default based on role
           toast.success('Welcome back! Let\'s finish setting up your account.');
-          setAuthStep('onboarding-personalize');
+          if (profileResult.user.role === 'SERVICE_PROVIDER') {
+            setProviderAuthStep('provider-profile');
+          } else {
+            setUserAuthStep('onboarding-personalize');
+          }
         }
       } else {
         // Onboarding is complete
         toast.success('Welcome back! You have successfully signed in.');
         hideAuth();
+      }
+      } catch (onboardingError) {
+        console.error('Error checking onboarding status:', onboardingError);
+        // Fallback to appropriate flow based on role
+        toast.success('Welcome back! Let\'s continue setting up your account.');
+        if (profileResult.user.role === 'SERVICE_PROVIDER') {
+          setProviderAuthStep('provider-profile');
+        } else {
+          setUserAuthStep('onboarding-personalize');
+        }
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Sign in failed';
@@ -87,19 +115,6 @@ export function SignInForm() {
     }
   };
 
-  // Helper function to map backend steps to frontend steps
-  const mapBackendStepToFrontendStep = (backendStep: string) => {
-    const stepMap: Record<string, any> = {
-      'email_verification': 'verify-email',
-      'basic_profile': 'onboarding-profile',
-      'location': 'onboarding-location',
-      'interests': 'onboarding-interests',
-      'experience': 'onboarding-experience',
-      'verification_documents': 'onboarding-documents',
-    };
-    
-    return stepMap[backendStep] || 'onboarding-personalize';
-  };
 
   const handleSocialAuth = async (provider: 'google' | 'facebook') => {
     // TODO: Implement real social auth

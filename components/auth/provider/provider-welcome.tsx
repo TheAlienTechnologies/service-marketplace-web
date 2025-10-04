@@ -38,8 +38,8 @@ export function ProviderWelcomeForm() {
   const onSubmit = async (data: SignUpFormData) => {
     setIsLoading(true);
     try {
-      // Use the regular signup API - we'll handle provider role in the backend
-      const result = await apiService.signUp(data);
+      // Use the signup API with SERVICE_PROVIDER role
+      const result = await apiService.signUp({ ...data, role: 'SERVICE_PROVIDER' });
       
       // Store user data in auth store so we have the email for verification
       if (result.user) {
