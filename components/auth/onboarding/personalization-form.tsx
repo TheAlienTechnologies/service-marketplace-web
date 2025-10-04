@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/auth-store';
 
 export function PersonalizationForm() {
-  const { setAuthStep } = useAuthStore();
+  const { nextUserStep } = useAuthStore();
 
   const handleGetStarted = () => {
-    setAuthStep('onboarding-location');
+    nextUserStep();
   };
 
   return (

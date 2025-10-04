@@ -5,7 +5,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuthStore } from '@/store/auth-store';
 
 export function Header() {
-  const { isAuthenticated, user, showAuth, signOut } = useAuthStore();
+  const { isAuthenticated, user, showAuth, signOut, startUserFlow, startProviderFlow } = useAuthStore();
 
   return (
     <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
@@ -36,9 +36,12 @@ export function Header() {
             <a href="#" className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400">
               How it Works
             </a>
-            <a href="#" className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400">
+            <button 
+              onClick={startProviderFlow}
+              className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400"
+            >
               Become a Provider
-            </a>
+            </button>
             <a href="#" className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400">
               Help
             </a>
@@ -73,7 +76,7 @@ export function Header() {
                   Sign In
                 </Button>
                 <Button
-                  onClick={() => showAuth('signup')}
+                  onClick={startUserFlow}
                   size="sm"
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >

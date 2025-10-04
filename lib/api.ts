@@ -197,6 +197,8 @@ class ApiService {
     phoneNumber?: string;
     countryCode?: string;
     preferredLanguage?: string;
+    bio?: string;
+    experienceLevel?: string;
   }, avatarFile?: File): Promise<{ user: User }> {
     const formData = new FormData();
     
@@ -216,7 +218,12 @@ class ApiService {
     if (profileData.preferredLanguage) {
       formData.append('preferredLanguage', profileData.preferredLanguage);
     }
-    
+    if (profileData.bio) {
+      formData.append('bio', profileData.bio);
+    }
+    if (profileData.experienceLevel) {
+      formData.append('experienceLevel', profileData.experienceLevel);
+    }
     // Add avatar file if provided
     if (avatarFile) {
       formData.append('avatar', avatarFile);

@@ -21,18 +21,16 @@ const signUpSchema = z.object({
 
 type SignUpFormData = z.infer<typeof signUpSchema>;
 
-export function SignUpForm() {
+export function ProviderWelcomeForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { setAuthStep, setUser, nextUserStep } = useAuthStore();
+  const { setAuthStep, setProviderAuthStep, setUser, nextProviderStep } = useAuthStore();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-    setError,
-    getValues,
   } = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
   });
@@ -40,6 +38,7 @@ export function SignUpForm() {
   const onSubmit = async (data: SignUpFormData) => {
     setIsLoading(true);
     try {
+      // Use the regular signup API - we'll handle provider role in the backend
       const result = await apiService.signUp(data);
       
       // Store user data in auth store so we have the email for verification
@@ -48,7 +47,7 @@ export function SignUpForm() {
       }
       
       toast.success('Account created successfully! Please check your email for verification.');
-      nextUserStep();
+      nextProviderStep();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Sign up failed';
       toast.error(errorMessage);
@@ -58,8 +57,8 @@ export function SignUpForm() {
   };
 
   const handleSocialAuth = (provider: 'google' | 'facebook') => {
-    // Mock social auth
-    console.log(`Sign up with ${provider}`);
+    // Mock social auth for provider
+    console.log(`Provider sign up with ${provider}`);
   };
 
   return (
@@ -69,12 +68,12 @@ export function SignUpForm() {
         <div className="w-16 h-16 mx-auto mb-4">
           <img 
             src="/assets/logo/logo.svg" 
-            alt="Pavodah Logo" 
+            alt="AVADgh Logo" 
             className="w-full h-full"
           />
         </div>
         <h1 className="text-[30px] font-bold leading-[38px] text-gray-900 dark:text-white font-inter tracking-[0%] mb-[30px]">
-          Welcome to Pavodah
+          Welcome to AVADgh
         </h1>
         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
           Sign up
@@ -211,7 +210,6 @@ export function SignUpForm() {
           )}
         </div>
 
-
         {/* Submit Button */}
         <Button
           type="submit"
@@ -239,7 +237,7 @@ export function SignUpForm() {
       {/* Sign In Link */}
       <div className="text-center mt-4">
         <span className="text-sm text-gray-600 dark:text-gray-400">
-          Already on Pavodah?{' '}
+          Already on AVADgh?{' '}
         </span>
         <button
           onClick={() => setAuthStep('signin')}

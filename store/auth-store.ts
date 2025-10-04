@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { AuthState, AuthStep, User } from '@/types/auth';
+import { AuthState, AuthStep, UserAuthStep, ProviderAuthStep, User, USER_AUTH_STEPS, PROVIDER_AUTH_STEPS } from '@/types/auth';
 import { apiService } from '@/lib/api';
 
 interface AuthStore extends AuthState {
@@ -14,10 +14,20 @@ interface AuthStore extends AuthState {
   showAuth: (step?: AuthStep) => void;
   hideAuth: () => void;
   setAuthStep: (step: AuthStep) => void;
+  setUserAuthStep: (step: UserAuthStep) => void;
+  setProviderAuthStep: (step: ProviderAuthStep) => void;
+  startUserFlow: () => void;
+  startProviderFlow: () => void;
   setForgotPasswordEmail: (email: string | null) => void;
   setForgotPasswordOtp: (otp: string | null) => void;
   clearForgotPasswordState: () => void;
   signOut: () => void;
+  
+  // Flow-specific navigation methods
+  nextUserStep: () => void;
+  nextProviderStep: () => void;
+  previousUserStep: () => void;
+  previousProviderStep: () => void;
 }
 
 export const useAuthStore = create<AuthStore>()(
@@ -29,6 +39,9 @@ export const useAuthStore = create<AuthStore>()(
       isLoading: false,
       showAuthModal: false,
       authStep: 'signin',
+      userAuthStep: 'signup',
+      providerAuthStep: 'provider-signup',
+      authFlow: 'user',
       forgotPasswordEmail: null,
       forgotPasswordOtp: null,
 
@@ -51,6 +64,30 @@ export const useAuthStore = create<AuthStore>()(
 
       setAuthStep: (authStep) => set({ authStep }),
 
+      setUserAuthStep: (userAuthStep) => set({ 
+        userAuthStep, 
+        authFlow: 'user',
+        showAuthModal: true 
+      }),
+
+      setProviderAuthStep: (providerAuthStep) => set({ 
+        providerAuthStep, 
+        authFlow: 'provider',
+        showAuthModal: true 
+      }),
+
+      startUserFlow: () => set({ 
+        authFlow: 'user',
+        userAuthStep: 'signup',
+        showAuthModal: true 
+      }),
+
+      startProviderFlow: () => set({ 
+        authFlow: 'provider',
+        providerAuthStep: 'provider-signup',
+        showAuthModal: true 
+      }),
+
       setForgotPasswordEmail: (forgotPasswordEmail) => set({ forgotPasswordEmail }),
 
       setForgotPasswordOtp: (forgotPasswordOtp) => set({ forgotPasswordOtp }),
@@ -69,6 +106,43 @@ export const useAuthStore = create<AuthStore>()(
           forgotPasswordEmail: null,
           forgotPasswordOtp: null
         });
+      },
+
+      // Flow-specific navigation methods
+      nextUserStep: () => {
+        const { userAuthStep } = get();
+        const currentIndex = USER_AUTH_STEPS.indexOf(userAuthStep);
+        if (currentIndex < USER_AUTH_STEPS.length - 1) {
+          const nextStep = USER_AUTH_STEPS[currentIndex + 1];
+          set({ userAuthStep: nextStep, authFlow: 'user', showAuthModal: true });
+        }
+      },
+
+      nextProviderStep: () => {
+        const { providerAuthStep } = get();
+        const currentIndex = PROVIDER_AUTH_STEPS.indexOf(providerAuthStep);
+        if (currentIndex < PROVIDER_AUTH_STEPS.length - 1) {
+          const nextStep = PROVIDER_AUTH_STEPS[currentIndex + 1];
+          set({ providerAuthStep: nextStep, authFlow: 'provider', showAuthModal: true });
+        }
+      },
+
+      previousUserStep: () => {
+        const { userAuthStep } = get();
+        const currentIndex = USER_AUTH_STEPS.indexOf(userAuthStep);
+        if (currentIndex > 0) {
+          const previousStep = USER_AUTH_STEPS[currentIndex - 1];
+          set({ userAuthStep: previousStep, authFlow: 'user', showAuthModal: true });
+        }
+      },
+
+      previousProviderStep: () => {
+        const { providerAuthStep } = get();
+        const currentIndex = PROVIDER_AUTH_STEPS.indexOf(providerAuthStep);
+        if (currentIndex > 0) {
+          const previousStep = PROVIDER_AUTH_STEPS[currentIndex - 1];
+          set({ providerAuthStep: previousStep, authFlow: 'provider', showAuthModal: true });
+        }
       },
     }),
     {

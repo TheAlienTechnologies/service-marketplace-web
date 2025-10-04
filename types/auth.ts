@@ -18,6 +18,9 @@ export interface AuthState {
   isLoading: boolean;
   showAuthModal: boolean;
   authStep: AuthStep;
+  userAuthStep: UserAuthStep;
+  providerAuthStep: ProviderAuthStep;
+  authFlow: 'user' | 'provider';
 }
 
 export type AuthStep = 
@@ -28,13 +31,52 @@ export type AuthStep =
   | 'forgot-password-sent'
   | 'verify-password-reset-otp'
   | 'reset-password'
-  | 'reset-password-success'
+  | 'reset-password-success';
+
+export type UserAuthStep = 
+  | 'signup'
+  | 'verify-email'
   | 'onboarding-personalize'
   | 'onboarding-location'
   | 'onboarding-profile'
   | 'onboarding-interests'
   | 'onboarding-experience'
   | 'onboarding-documents';
+
+export type ProviderAuthStep = 
+  | 'provider-signup'
+  | 'verify-email'
+  | 'provider-profile'
+  | 'provider-bio'
+  | 'provider-skills'
+  | 'provider-experience'
+  | 'provider-coverage'
+  | 'provider-documents'
+  | 'provider-submitted';
+
+// Step arrays for easier navigation
+export const USER_AUTH_STEPS: UserAuthStep[] = [
+  'signup',
+  'verify-email',
+  'onboarding-personalize',
+  'onboarding-location',
+  'onboarding-profile',
+  'onboarding-interests',
+  'onboarding-experience',
+  'onboarding-documents'
+];
+
+export const PROVIDER_AUTH_STEPS: ProviderAuthStep[] = [
+  'provider-signup',
+  'verify-email',
+  'provider-profile',
+  'provider-bio',
+  'provider-skills',
+  'provider-experience',
+  'provider-coverage',
+  'provider-documents',
+  'provider-submitted'
+];
 
 export interface SignInData {
   email: string;

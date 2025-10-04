@@ -13,19 +13,19 @@ import { toast } from 'react-toastify';
 import { searchMockLocations, getMockCurrentLocation, MockLocation } from '@/lib/mock-locations';
 
 const locationSchema = z.object({
-  address: z.string().min(1, 'Please enter your location'),
+  address: z.string().min(1, 'Please enter your service area'),
 });
 
 type LocationFormData = z.infer<typeof locationSchema>;
 
-export function OnboardingLocationForm() {
+export function ProviderCoverageForm() {
   const [useCurrentLocation, setUseCurrentLocation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [searchResults, setSearchResults] = useState<MockLocation[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<MockLocation | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const { nextUserStep } = useAuthStore();
+  const { nextProviderStep, previousProviderStep } = useAuthStore();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -81,6 +81,7 @@ export function OnboardingLocationForm() {
 
     setIsLoading(true);
     try {
+      // Save service coverage area
       await apiService.updateLocation({
         placeId: selectedLocation.placeId,
         addressName: selectedLocation.addressName,
@@ -94,11 +95,11 @@ export function OnboardingLocationForm() {
         isPrimary: true,
       });
 
-      toast.success('Location saved successfully!');
-      nextUserStep();
+      toast.success('Service area saved successfully!');
+      nextProviderStep();
     } catch (error) {
-      console.error('Failed to save location:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save location';
+      console.error('Failed to save service area:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save service area';
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -122,23 +123,34 @@ export function OnboardingLocationForm() {
     setShowDropdown(false);
   };
 
-  const handleSkip = () => {
-    nextUserStep();
+  const handlePrevious = () => {
+    previousProviderStep();
   };
 
   return (
     <div className="p-8">
+      {/* Progress indicator */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
+          <span>5/7</span>
+          <span>71%</span>
+        </div>
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div className="bg-green-600 h-2 rounded-full" style={{ width: '71%' }}></div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+        <h1 className="text-[30px] font-bold leading-[38px] text-gray-900 dark:text-white font-inter tracking-[0%] mb-6">
           Let's finish setting up your account
         </h1>
-        <div className="mt-6">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            Location set-up
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            Coverage Area
           </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            We'll use your location to show services and providers near you.
+          <p className="text-gray-600 dark:text-gray-400">
+            Select Location Preference
           </p>
         </div>
       </div>
@@ -152,8 +164,8 @@ export function OnboardingLocationForm() {
           <div className="relative">
             <Input
               {...register('address')}
-              placeholder="Enter your location"
-              className="pl-10 pr-10"
+              placeholder="Takoradi SSNIT"
+              className="pl-10 pr-10 h-12"
               onFocus={() => {
                 if (searchResults.length > 0) {
                   setShowDropdown(true);
@@ -221,32 +233,50 @@ export function OnboardingLocationForm() {
           Use my current location
         </button>
 
-        {/* Skip Option */}
-        <button
-          type="button"
-          onClick={handleSkip}
-          className="flex items-center text-sm text-gray-600 hover:text-gray-700"
-        >
-          <span className="mr-2">→</span>
-          Skip for now
-        </button>
+        {/* Selected Location Display */}
+        {selectedLocation && (
+          <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <MapPin className="w-5 h-5 text-green-600 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                  Service Area Selected
+                </p>
+                <p className="text-xs text-green-600 dark:text-green-300 mt-1">
+                  {selectedLocation.formattedAddress}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Info Text */}
         <div className="flex items-start space-x-2 text-xs text-gray-500">
           <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span>You can update this anytime in Settings.</span>
+          <span>This helps clients find you when they're looking for services in your area. You can update this anytime in Settings.</span>
         </div>
 
-        {/* Next Button */}
-        <Button
-          type="submit"
-          disabled={isLoading || !selectedLocation}
-          className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-medium disabled:opacity-50"
-        >
-          {isLoading ? 'Saving...' : !selectedLocation ? 'Select Location' : 'Next →'}
-        </Button>
+        {/* Navigation Buttons */}
+        <div className="flex justify-between pt-8">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={handlePrevious}
+            className="text-gray-600 hover:text-gray-700"
+          >
+            ← Previous
+          </Button>
+          
+          <Button
+            type="submit"
+            disabled={isLoading || !selectedLocation}
+            className="bg-green-600 hover:bg-green-700 text-white font-medium px-6"
+          >
+            {isLoading ? 'Saving...' : !selectedLocation ? 'Select Location' : 'Next →'}
+          </Button>
+        </div>
       </form>
     </div>
   );

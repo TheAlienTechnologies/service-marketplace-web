@@ -13,10 +13,13 @@ export function VerifyEmailForm() {
   const [error, setError] = useState('');
   const [timeLeft, setTimeLeft] = useState(0);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const { setAuthStep, user } = useAuthStore();
+  const { setUserAuthStep, setProviderAuthStep, user, authFlow, nextUserStep, nextProviderStep } = useAuthStore();
 
   // Get email from user - should always be available after signup
   const email = user?.email || 'your-email@example.com';
+  
+  // Check if we came from provider signup by checking if user role is SERVICE_PROVIDER
+  const isProviderFlow = user?.role === 'SERVICE_PROVIDER';
 
   useEffect(() => {
     // Focus first input on mount
@@ -62,7 +65,13 @@ export function VerifyEmailForm() {
     try {
       await apiService.verifyEmail(email, verificationCode);
       toast.success('Email verified successfully!');
-      setAuthStep('onboarding-personalize');
+      
+      // Redirect based on auth flow
+      if (authFlow === 'provider') {
+        nextProviderStep();
+      } else {
+        nextUserStep();
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Verification failed';
       toast.error(errorMessage);

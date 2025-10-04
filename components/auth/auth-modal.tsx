@@ -14,18 +14,25 @@ import { PersonalizationForm } from './onboarding/personalization-form';
 import { OnboardingLocationForm } from './onboarding/location-form';
 import { OnboardingProfileForm } from './onboarding/profile-form';
 import { OnboardingInterestsForm } from './onboarding/interests-form';
+import {
+  ProviderWelcomeForm,
+  ProviderProfileForm,
+  ProviderBioForm,
+  ProviderSkillsForm,
+  ProviderExperienceForm,
+  ProviderCoverageForm,
+  ProviderDocumentsForm,
+  ProviderSubmittedForm
+} from './provider';
 
 export function AuthModal() {
-  const { showAuthModal, authStep, hideAuth } = useAuthStore();
+  const { showAuthModal, authStep, userAuthStep, providerAuthStep, authFlow, hideAuth } = useAuthStore();
 
   const renderAuthStep = () => {
+    // Handle common auth steps (signin, forgot password, etc.) - but NOT verify-email
     switch (authStep) {
       case 'signin':
         return <SignInForm />;
-      case 'signup':
-        return <SignUpForm />;
-      case 'verify-email':
-        return <VerifyEmailForm />;
       case 'forgot-password':
         return <ForgotPasswordForm />;
       case 'forgot-password-sent':
@@ -36,30 +43,86 @@ export function AuthModal() {
         return <ResetPasswordForm />;
       case 'reset-password-success':
         return <ResetPasswordSuccess />;
-      case 'onboarding-personalize':
-        return <PersonalizationForm />;
-      case 'onboarding-location':
-        return <OnboardingLocationForm />;
-      case 'onboarding-profile':
-        return <OnboardingProfileForm />;
-      case 'onboarding-interests':
-        return <OnboardingInterestsForm />;
-      default:
-        return <SignInForm />;
     }
+
+    // Handle flow-specific steps
+    if (authFlow === 'user') {
+      switch (userAuthStep) {
+        case 'signup':
+          return <SignUpForm />;
+        case 'verify-email':
+          return <VerifyEmailForm />;
+        case 'onboarding-personalize':
+          return <PersonalizationForm />;
+        case 'onboarding-location':
+          return <OnboardingLocationForm />;
+        case 'onboarding-profile':
+          return <OnboardingProfileForm />;
+        case 'onboarding-interests':
+          return <OnboardingInterestsForm />;
+        default:
+          return <SignUpForm />;
+      }
+    } else if (authFlow === 'provider') {
+      switch (providerAuthStep) {
+        case 'provider-signup':
+          return <ProviderWelcomeForm />;
+        case 'verify-email':
+          return <VerifyEmailForm />;
+        case 'provider-profile':
+          return <ProviderProfileForm />;
+        case 'provider-bio':
+          return <ProviderBioForm />;
+        case 'provider-skills':
+          return <ProviderSkillsForm />;
+        case 'provider-experience':
+          return <ProviderExperienceForm />;
+        case 'provider-coverage':
+          return <ProviderCoverageForm />;
+        case 'provider-documents':
+          return <ProviderDocumentsForm />;
+        case 'provider-submitted':
+          return <ProviderSubmittedForm />;
+        default:
+          return <ProviderWelcomeForm />;
+      }
+    }
+
+    // Fallback for common steps that don't have a specific flow
+    if (authStep === 'verify-email') {
+      return <VerifyEmailForm />;
+    }
+
+    return <SignInForm />;
   };
 
   // Determine modal width based on the current step
   const getModalWidth = () => {
-    if (authStep === 'onboarding-interests') {
-      return 'max-w-2xl'; // Wider for interests tags
+    // Check flow-specific steps
+    if (authFlow === 'user') {
+      if (userAuthStep === 'onboarding-interests') {
+        return 'max-w-2xl'; // Wider for interests tags
+      }
+      if (userAuthStep === 'onboarding-personalize') {
+        return 'max-w-xl'; // Wider for personalization title
+      }
+      if (userAuthStep === 'onboarding-profile') {
+        return 'max-w-xl'; // Wider for profile form
+      }
+    } else if (authFlow === 'provider') {
+      if (providerAuthStep === 'provider-skills') {
+        return 'max-w-2xl'; // Wider for skills tags
+      }
+      if (providerAuthStep === 'provider-profile' ||
+          providerAuthStep === 'provider-bio' ||
+          providerAuthStep === 'provider-experience' ||
+          providerAuthStep === 'provider-coverage' ||
+          providerAuthStep === 'provider-documents' ||
+          providerAuthStep === 'provider-submitted') {
+        return 'max-w-xl'; // Wider for profile forms
+      }
     }
-    if (authStep === 'onboarding-personalize') {
-      return 'max-w-xl'; // Wider for personalization title
-    }
-    if (authStep === 'onboarding-profile') {
-      return 'max-w-xl'; // Wider for profile form
-    }
+
     // Forgot password steps need exact width for split layout (315px + 522px = 837px)
     if (authStep === 'forgot-password' || 
         authStep === 'forgot-password-sent' || 
@@ -74,7 +137,16 @@ export function AuthModal() {
     <Modal
       isOpen={showAuthModal}
       onClose={hideAuth}
-      showCloseButton={!authStep.startsWith('onboarding')}
+      showCloseButton={
+        authStep === 'signin' || 
+        authStep === 'forgot-password' || 
+        authStep === 'forgot-password-sent' || 
+        authStep === 'verify-password-reset-otp' || 
+        authStep === 'reset-password' || 
+        authStep === 'reset-password-success' ||
+        (authFlow === 'user' && userAuthStep === 'signup') ||
+        (authFlow === 'provider' && providerAuthStep === 'provider-signup')
+      }
       className={getModalWidth()}
     >
       {renderAuthStep()}

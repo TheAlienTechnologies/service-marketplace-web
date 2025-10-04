@@ -28,14 +28,14 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
-                onClick={() => showAuth('signup')}
+                onClick={() => useAuthStore.getState().startUserFlow()}
                 size="lg"
                 className="bg-white text-green-600 hover:bg-gray-100 font-semibold px-8 py-3 text-lg"
               >
                 Get Started
               </Button>
               <Button
-                onClick={() => showAuth('signin')}
+                onClick={() => useAuthStore.getState().startProviderFlow()}
                 size="lg"
                 variant="outline"
                 className="border-white text-white hover:bg-white hover:text-green-600 font-semibold px-8 py-3 text-lg"
@@ -137,14 +137,14 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
-              onClick={() => showAuth('signup')}
+              onClick={() => useAuthStore.getState().startUserFlow()}
               size="lg"
               className="bg-white text-green-600 hover:bg-gray-100 font-semibold px-8 py-3 text-lg"
             >
               Find Services
             </Button>
             <Button
-              onClick={() => showAuth('signup')}
+              onClick={() => useAuthStore.getState().startProviderFlow()}
               size="lg"
               variant="outline"
               className="border-white text-white hover:bg-white hover:text-green-600 font-semibold px-8 py-3 text-lg"

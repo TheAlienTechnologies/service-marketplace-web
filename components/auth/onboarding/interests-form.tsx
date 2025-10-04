@@ -12,7 +12,7 @@ export function OnboardingInterestsForm() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
-  const { setUser, hideAuth, setAuthStep } = useAuthStore();
+  const { setUser, hideAuth, nextUserStep, previousUserStep } = useAuthStore();
 
   // Fetch categories on component mount
   useEffect(() => {
@@ -68,7 +68,7 @@ export function OnboardingInterestsForm() {
   };
 
   const handlePrevious = () => {
-    setAuthStep('onboarding-profile');
+    previousUserStep();
   };
 
   return (

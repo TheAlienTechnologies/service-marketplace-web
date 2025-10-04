@@ -33,7 +33,7 @@ const countryCodes = [
   { code: '+44', country: 'UK', flag: '🇬🇧' },
 ];
 
-export function OnboardingProfileForm() {
+export function ProviderProfileForm() {
   const [selectedCountryCode, setSelectedCountryCode] = useState(countryCodes[0]);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
@@ -42,13 +42,12 @@ export function OnboardingProfileForm() {
   const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const [verificationAttempts, setVerificationAttempts] = useState(0);
   const [nextResendTime, setNextResendTime] = useState<Date | null>(null);
   const [resendTimer, setResendTimer] = useState(0);
   const [selectedAvatar, setSelectedAvatar] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const { nextUserStep, previousUserStep } = useAuthStore();
+  const { nextProviderStep, previousProviderStep } = useAuthStore();
 
   // Refs for timers and file input
   const verificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -140,22 +139,6 @@ export function OnboardingProfileForm() {
       return;
     }
 
-    // Check if all required fields are filled
-    if (!data.firstName.trim()) {
-      toast.error('Please enter your first name');
-      return;
-    }
-
-    if (!data.lastName.trim()) {
-      toast.error('Please enter your last name');
-      return;
-    }
-
-    if (!data.phoneNumber.trim()) {
-      toast.error('Please enter your phone number');
-      return;
-    }
-
     setIsLoading(true);
     try {
       const profileData = {
@@ -166,11 +149,11 @@ export function OnboardingProfileForm() {
         preferredLanguage: data.language,
       };
 
-      // Update profile with avatar if selected
-      const result = await apiService.updateProfile(profileData, selectedAvatar || undefined);
+      // Update profile with avatar - reuse existing API
+      const result = await apiService.updateProfile(profileData, selectedAvatar);
       
       toast.success('Profile updated successfully!');
-      nextUserStep();
+      nextProviderStep();
     } catch (error) {
       console.error('Failed to save profile:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
@@ -178,10 +161,6 @@ export function OnboardingProfileForm() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handlePrevious = () => {
-    previousUserStep();
   };
 
   const handleAvatarClick = () => {
@@ -221,7 +200,6 @@ export function OnboardingProfileForm() {
     const file = files[0];
     
     if (file) {
-      // Process the file directly instead of simulating an event
       processAvatarFile(file);
     }
   };
@@ -263,7 +241,6 @@ export function OnboardingProfileForm() {
       await apiService.sendPhoneVerification(fullPhoneNumber);
       
       setPhoneVerificationStep('verify');
-      setVerificationAttempts(0);
       
       // Set initial resend timer (30 seconds)
       const nextResend = new Date();
@@ -277,43 +254,6 @@ export function OnboardingProfileForm() {
       toast.error(errorMessage);
     } finally {
       setIsVerifying(false);
-    }
-  };
-
-  const handleVerifyCode = async () => {
-    const code = verificationCode.join('');
-    await handleVerifyCodeWithCode(code);
-  };
-
-  const handleResendCode = async () => {
-    if (nextResendTime && new Date() < nextResendTime) {
-      return; // Still in cooldown
-    }
-
-    setIsResending(true);
-    try {
-      const fullPhoneNumber = selectedCountryCode.code + watch('phoneNumber');
-      await apiService.resendPhoneVerification(fullPhoneNumber);
-      
-      setVerificationCode(['', '', '', '', '', '']);
-      
-      // Exponential backoff: 30s, 60s, 120s, 240s, max 300s (5min)
-      const backoffSeconds = Math.min(30 * Math.pow(2, verificationAttempts), 300);
-      const nextResend = new Date();
-      nextResend.setSeconds(nextResend.getSeconds() + backoffSeconds);
-      setNextResendTime(nextResend);
-      
-      toast.success('Verification code sent to your phone');
-      
-      // Focus first input
-      const firstInput = document.querySelector(`input[name="code-0"]`) as HTMLInputElement;
-      firstInput?.focus();
-    } catch (error) {
-      console.error('Failed to resend:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to resend verification code';
-      toast.error(errorMessage);
-    } finally {
-      setIsResending(false);
     }
   };
 
@@ -339,7 +279,7 @@ export function OnboardingProfileForm() {
     if (newCode.every(digit => digit !== '')) {
       verificationTimeoutRef.current = setTimeout(() => {
         handleVerifyCodeWithCode(newCode.join(''));
-      }, 800); // 800ms delay after user stops typing
+      }, 800);
     }
   };
 
@@ -352,12 +292,11 @@ export function OnboardingProfileForm() {
       await apiService.verifyPhone(fullPhoneNumber, code);
       
       setPhoneVerificationStep('verified');
-      setNextResendTime(null); // Clear timer
+      setNextResendTime(null);
       toast.success('Phone number verified successfully!');
     } catch (error) {
       console.error('Verification failed:', error);
       setVerificationCode(['', '', '', '', '', '']);
-      setVerificationAttempts(prev => prev + 1);
       
       const errorMessage = error instanceof Error ? error.message : 'Invalid verification code';
       toast.error(errorMessage);
@@ -370,8 +309,50 @@ export function OnboardingProfileForm() {
     }
   };
 
+  const handleResendCode = async () => {
+    if (nextResendTime && new Date() < nextResendTime) {
+      return;
+    }
+
+    setIsResending(true);
+    try {
+      const fullPhoneNumber = selectedCountryCode.code + watch('phoneNumber');
+      await apiService.resendPhoneVerification(fullPhoneNumber);
+      
+      setVerificationCode(['', '', '', '', '', '']);
+      
+      // Set new resend timer
+      const nextResend = new Date();
+      nextResend.setSeconds(nextResend.getSeconds() + 60);
+      setNextResendTime(nextResend);
+      
+      toast.success('Verification code sent to your phone');
+      
+      // Focus first input
+      const firstInput = document.querySelector(`input[name="code-0"]`) as HTMLInputElement;
+      firstInput?.focus();
+    } catch (error) {
+      console.error('Failed to resend:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to resend verification code';
+      toast.error(errorMessage);
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   return (
     <div className="p-8">
+      {/* Progress indicator */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
+          <span>1/7</span>
+          <span>14%</span>
+        </div>
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+          <div className="bg-green-600 h-2 rounded-full" style={{ width: '14%' }}></div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-[30px] font-bold leading-[38px] text-gray-900 dark:text-white font-inter tracking-[0%] mb-6">
@@ -452,39 +433,47 @@ export function OnboardingProfileForm() {
           />
         </div>
 
-        {/* First Name and Last Name */}
+        {/* Full Name */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Full name
+          </label>
+          <div className="relative">
+            <Input
+              value={`${firstName || ''} ${lastName || ''}`.trim() || 'joel.sm13@gmail.com'}
+              placeholder="joel.sm13@gmail.com"
+              className="pl-10 h-12"
+              readOnly
+            />
+            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          </div>
+        </div>
+
+        {/* First Name and Last Name - Hidden but registered */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* First Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               First name
             </label>
-            <div className="relative">
-              <Input
-                {...register('firstName')}
-                placeholder="John"
-                className="pl-10 h-12"
-              />
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            </div>
+            <Input
+              {...register('firstName')}
+              placeholder="John"
+              className="h-12"
+            />
             {errors.firstName && (
               <p className="text-sm text-red-600 mt-1">{errors.firstName.message}</p>
             )}
           </div>
 
-          {/* Last Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Last name
             </label>
-            <div className="relative">
-              <Input
-                {...register('lastName')}
-                placeholder="Doe"
-                className="pl-10 h-12"
-              />
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            </div>
+            <Input
+              {...register('lastName')}
+              placeholder="Doe"
+              className="h-12"
+            />
             {errors.lastName && (
               <p className="text-sm text-red-600 mt-1">{errors.lastName.message}</p>
             )}
@@ -495,9 +484,6 @@ export function OnboardingProfileForm() {
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Phone number
-            {phoneVerificationStep !== 'verified' && (
-              <span className="text-xs text-orange-600 ml-2">(Verification required)</span>
-            )}
           </label>
           
           {phoneVerificationStep === 'input' && (
@@ -589,30 +575,22 @@ export function OnboardingProfileForm() {
                 </div>
               </div>
               
-              {/* Auto-verification status and Resend */}
-              <div className="text-center space-y-2">
-                {isVerifying && (
-                  <p className="text-sm text-blue-600 dark:text-blue-400">
-                    Verifying code...
+              {/* Resend */}
+              <div className="text-center">
+                {nextResendTime && resendTimer > 0 ? (
+                  <p className="text-sm text-gray-500">
+                    Resend code in {Math.floor(resendTimer / 60)}:{(resendTimer % 60).toString().padStart(2, '0')}
                   </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResendCode}
+                    disabled={isResending}
+                    className="text-sm text-green-600 hover:text-green-700 font-medium"
+                  >
+                    {isResending ? 'Resending...' : 'Resend code'}
+                  </button>
                 )}
-                
-                <div>
-                  {nextResendTime && resendTimer > 0 ? (
-                    <p className="text-sm text-gray-500">
-                      Resend code in {Math.floor(resendTimer / 60)}:{(resendTimer % 60).toString().padStart(2, '0')}
-                    </p>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleResendCode}
-                      disabled={isResending}
-                      className="text-sm text-green-600 hover:text-green-700 font-medium"
-                    >
-                      {isResending ? 'Resending...' : 'Resend code'}
-                    </button>
-                  )}
-                </div>
               </div>
             </div>
           )}
@@ -688,23 +666,23 @@ export function OnboardingProfileForm() {
           <Button
             type="button"
             variant="ghost"
-            onClick={handlePrevious}
+            onClick={() => previousProviderStep()}
             className="text-gray-600 hover:text-gray-700 font-medium"
           >
             ← Previous
           </Button>
           
-            <Button
-              type="submit"
-              disabled={isLoading || !isFormValid()}
-              className="bg-green-600 hover:bg-green-700 text-white font-medium px-8 py-3 h-12 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Saving...' : 
-               phoneVerificationStep !== 'verified' ? 'Verify Phone First' :
-               !selectedAvatar ? 'Upload Profile Picture' :
-               !firstName?.trim() || !lastName?.trim() ? 'Complete Required Fields' :
-               'Next →'}
-            </Button>
+          <Button
+            type="submit"
+            disabled={isLoading || !isFormValid()}
+            className="bg-green-600 hover:bg-green-700 text-white font-medium px-8 py-3 h-12 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            {isLoading ? 'Saving...' : 
+             phoneVerificationStep !== 'verified' ? 'Verify Phone First' :
+             !selectedAvatar ? 'Upload Profile Picture' :
+             !firstName?.trim() || !lastName?.trim() ? 'Complete Required Fields' :
+             'Next →'}
+          </Button>
         </div>
       </form>
     </div>
