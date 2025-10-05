@@ -310,13 +310,15 @@ class ApiService {
     });
   }
 
-  // Social auth
-  async socialAuth(provider: 'google' | 'facebook', token: string): Promise<AuthResponse> {
+  // Social auth - Google only
+  async socialAuth(provider: 'google', accessToken: string, idToken?: string, role?: 'USER' | 'SERVICE_PROVIDER'): Promise<AuthResponse> {
     const response = await this.request<AuthResponse>('/auth/social', {
       method: 'POST',
       body: JSON.stringify({
         provider,
-        token,
+        accessToken,
+        idToken,
+        role,
       }),
     });
 

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/store/auth-store';
 import { apiService } from '@/lib/api';
 import { toast } from 'react-toastify';
+import { authClient } from '@/lib/auth-client';
 
 const signUpSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -57,9 +58,24 @@ export function SignUpForm() {
     }
   };
 
-  const handleSocialAuth = (provider: 'google' | 'facebook') => {
-    // Mock social auth
-    console.log(`Sign up with ${provider}`);
+  const handleGoogleAuth = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Use Better Auth to initiate Google OAuth
+      // Pass the intended role in the callback URL so we know which flow this is
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: window.location.origin + "/auth/callback?role=USER",
+      });
+      
+      // The page will redirect to Google, so we don't need to handle response here
+      
+    } catch (error) {
+      console.error('Google sign up error:', error);
+      toast.error(`Google sign up failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -87,7 +103,8 @@ export function SignUpForm() {
           type="button"
           variant="google"
           className="w-full h-12 text-sm font-medium"
-          onClick={() => handleSocialAuth('google')}
+          onClick={handleGoogleAuth}
+          disabled={isLoading}
         >
           <img 
             src="/assets/icons/google-color-svg.svg" 
@@ -95,20 +112,6 @@ export function SignUpForm() {
             className="w-5 h-5 mr-3" 
           />
           Sign up with Google
-        </Button>
-
-        <Button
-          type="button"
-          variant="facebook"
-          className="w-full h-12 text-sm font-medium"
-          onClick={() => handleSocialAuth('facebook')}
-        >
-          <img 
-            src="/assets/icons/facebook-svg.svg" 
-            alt="Facebook" 
-            className="w-5 h-5 mr-3" 
-          />
-          Sign up with Facebook
         </Button>
       </div>
 
@@ -210,7 +213,6 @@ export function SignUpForm() {
             <p className="text-sm text-red-600 mt-1">{errors.confirmPassword.message}</p>
           )}
         </div>
-
 
         {/* Submit Button */}
         <Button

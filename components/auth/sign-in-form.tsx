@@ -11,6 +11,7 @@ import { apiService } from '@/lib/api';
 import { toast } from 'react-toastify';
 import { getNextOnboardingStep, needsOnboarding, getOnboardingStepMessage, getOnboardingStatus } from '@/lib/field-based-onboarding';
 import { mapBackendStepToFrontendStep } from '@/types/auth';
+import { authClient } from '@/lib/auth-client';
 
 const signInSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -116,28 +117,24 @@ export function SignInForm() {
   };
 
 
-  const handleSocialAuth = async (provider: 'google' | 'facebook') => {
-    // TODO: Implement real social auth
-    // For now, this is a placeholder that would follow the same onboarding check pattern
-    console.log(`Sign in with ${provider}`);
-    
-    // When implementing real social auth, follow this pattern:
-    /*
+  const handleGoogleAuth = async () => {
     try {
       setIsLoading(true);
-      const result = await apiService.socialAuth(provider);
-      const profileResult = await apiService.getProfile();
-      setUser(profileResult.user);
       
-      // Same onboarding check logic as regular sign-in
-      const onboardingStatus = await getOnboardingStatus();
-      // ... rest of onboarding logic
+      // Use Better Auth to initiate Google OAuth
+      // Pass the intended role in the callback URL so we know which flow this is
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: window.location.origin + "/auth/callback?role=USER",
+      });
+      
+      // The page will redirect to Google, so we don't need to handle response here
+      
     } catch (error) {
-      toast.error(`${provider} sign in failed`);
-    } finally {
+      console.error('Google sign in error:', error);
+      toast.error(`Google sign in failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsLoading(false);
     }
-    */
   };
 
   return (
@@ -165,7 +162,8 @@ export function SignInForm() {
           type="button"
           variant="google"
           className="w-full h-12 text-sm font-medium"
-          onClick={() => handleSocialAuth('google')}
+          onClick={handleGoogleAuth}
+          disabled={isLoading}
         >
           <img 
             src="/assets/icons/google-color-svg.svg" 
@@ -173,20 +171,6 @@ export function SignInForm() {
             className="w-5 h-5 mr-3" 
           />
           Sign in with Google
-        </Button>
-
-        <Button
-          type="button"
-          variant="facebook"
-          className="w-full h-12 text-sm font-medium"
-          onClick={() => handleSocialAuth('facebook')}
-        >
-          <img 
-            src="/assets/icons/facebook-svg.svg" 
-            alt="Facebook" 
-            className="w-5 h-5 mr-3" 
-          />
-          Sign in with Facebook
         </Button>
       </div>
 
