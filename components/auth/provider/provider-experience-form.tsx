@@ -36,8 +36,8 @@ export function ProviderExperienceForm() {
 
     setIsLoading(true);
     try {
-      // Save experience level
-      await apiService.updateProfile({ experienceLevel: selectedLevel });
+      // Save experience level using the correct onboarding endpoint
+      await apiService.updateExperience(selectedLevel);
       
       toast.success('Experience level saved successfully!');
       nextProviderStep();

@@ -174,6 +174,16 @@ class ApiService {
     });
   }
 
+  async updateExperience(experienceLevel: 'BEGINNER' | 'INTERMEDIATE' | 'EXPERT'): Promise<{ user: User }> {
+    const response = await this.request<{ user: User }>('/onboarding/experience', {
+      method: 'PUT',
+      body: JSON.stringify({
+        experienceLevel,
+      }),
+    });
+    return response.data;
+  }
+
   async updateLocation(locationData: {
     placeId?: string;
     addressName: string;
@@ -328,6 +338,51 @@ class ApiService {
       localStorage.setItem('refresh_token', response.data.refreshToken);
     }
 
+    return response.data;
+  }
+
+  async uploadDocument(file: File, documentType: string, description?: string): Promise<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('documentType', documentType);
+    if (description) {
+      formData.append('description', description);
+    }
+
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE_URL}/onboarding/documents`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.message || errorData.error || `HTTP error! status: ${response.status}`;
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json();
+    return result.data;
+  }
+
+  async getUserDocuments(): Promise<any[]> {
+    const response = await this.request<any[]>('/onboarding/documents');
+    return response.data;
+  }
+
+  async deleteDocument(documentId: string): Promise<void> {
+    await this.request(`/onboarding/documents/${documentId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async completeOnboarding(): Promise<{ user: User }> {
+    const response = await this.request<{ user: User }>('/onboarding/complete', {
+      method: 'POST',
+    });
     return response.data;
   }
 }

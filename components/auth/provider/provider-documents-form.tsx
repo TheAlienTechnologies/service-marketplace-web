@@ -13,6 +13,9 @@ interface DocumentFile {
   name: string;
   uploadProgress: number;
   isUploaded: boolean;
+  uploadedDocumentId?: string;
+  error?: string;
+  isUploading: boolean;
 }
 
 export function ProviderDocumentsForm() {
@@ -49,17 +52,17 @@ export function ProviderDocumentsForm() {
         return;
       }
 
-      // Determine document type based on filename
-      let docType = 'Other';
+      // Determine document type based on filename (matching backend enums)
+      let docType = 'OTHER';
       const fileName = file.name.toLowerCase();
       if (fileName.includes('certificate') || fileName.includes('cert')) {
-        docType = 'Certificate';
+        docType = 'CERTIFICATION';
+      } else if (fileName.includes('training')) {
+        docType = 'TRAINING_CERTIFICATE';
       } else if (fileName.includes('license') || fileName.includes('licence')) {
-        docType = 'License';
+        docType = 'LICENSE';
       } else if (fileName.includes('id') || fileName.includes('identity')) {
-        docType = 'ID Document';
-      } else if (fileName.includes('portfolio') || fileName.includes('work')) {
-        docType = 'Portfolio';
+        docType = 'ID_DOCUMENT';
       }
 
       newDocuments.push({
@@ -67,32 +70,98 @@ export function ProviderDocumentsForm() {
         type: docType,
         name: file.name,
         uploadProgress: 0,
-        isUploaded: false
+        isUploaded: false,
+        isUploading: false
       });
     });
 
     setDocuments(prev => [...prev, ...newDocuments]);
     
-    // Simulate upload progress for each new document
-    newDocuments.forEach((doc, index) => {
-      simulateUpload(documents.length + index);
-    });
+    // Don't auto-upload - let user click upload button
   };
 
-  const simulateUpload = (docIndex: number) => {
-    const interval = setInterval(() => {
+  const uploadDocument = async (docIndex: number) => {
+    try {
+      // Mark as uploading
       setDocuments(prev => {
         const updated = [...prev];
         if (updated[docIndex]) {
-          updated[docIndex].uploadProgress += 10;
-          if (updated[docIndex].uploadProgress >= 100) {
-            updated[docIndex].isUploaded = true;
-            clearInterval(interval);
-          }
+          updated[docIndex].isUploading = true;
+          updated[docIndex].error = undefined;
+          updated[docIndex].uploadProgress = 0;
         }
         return updated;
       });
-    }, 200);
+
+      const currentDoc = documents[docIndex];
+      if (!currentDoc) return;
+
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setDocuments(prev => {
+          const updated = [...prev];
+          if (updated[docIndex] && updated[docIndex].uploadProgress < 90) {
+            updated[docIndex].uploadProgress += 15;
+          }
+          return updated;
+        });
+      }, 200);
+
+      // Upload to API
+      const result = await apiService.uploadDocument(currentDoc.file, currentDoc.type, `${currentDoc.type} document`);
+      
+      clearInterval(progressInterval);
+      
+      // Mark as completed
+      setDocuments(prev => {
+        const updated = [...prev];
+        if (updated[docIndex]) {
+          updated[docIndex].uploadProgress = 100;
+          updated[docIndex].isUploaded = true;
+          updated[docIndex].isUploading = false;
+          updated[docIndex].uploadedDocumentId = result.id;
+        }
+        return updated;
+      });
+
+    } catch (error) {
+      console.error('Failed to upload document:', error);
+      
+      // Mark as failed
+      setDocuments(prev => {
+        const updated = [...prev];
+        if (updated[docIndex]) {
+          updated[docIndex].error = error instanceof Error ? error.message : 'Upload failed';
+          updated[docIndex].uploadProgress = 0;
+          updated[docIndex].isUploading = false;
+        }
+        return updated;
+      });
+      
+      toast.error(`Failed to upload ${documents[docIndex]?.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleUploadAll = async () => {
+    setIsLoading(true);
+    try {
+      // Upload all documents that haven't been uploaded yet
+      const uploadPromises = documents.map((doc, index) => {
+        if (!doc.isUploaded && !doc.isUploading) {
+          return uploadDocument(index);
+        }
+        return Promise.resolve();
+      });
+
+      await Promise.all(uploadPromises);
+      return true; // Success
+    } catch (error) {
+      console.error('Failed to upload documents:', error);
+      toast.error('Some documents failed to upload');
+      return false; // Failed
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -117,29 +186,16 @@ export function ProviderDocumentsForm() {
 
   const handleSubmit = async () => {
     if (documents.length === 0) {
-      toast.error('Please upload at least one document');
+      toast.error('Please select at least one document');
       return;
     }
 
-    const unfinishedUploads = documents.filter(doc => !doc.isUploaded);
-    if (unfinishedUploads.length > 0) {
-      toast.error('Please wait for all documents to finish uploading');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // Mock API call - simulate upload delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+    // Upload all documents and proceed if successful
+    const uploadSuccess = await handleUploadAll();
+    
+    if (uploadSuccess) {
       toast.success('Documents uploaded successfully!');
       nextProviderStep();
-    } catch (error) {
-      console.error('Failed to upload documents:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to upload documents';
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -147,7 +203,8 @@ export function ProviderDocumentsForm() {
     previousProviderStep();
   };
 
-  const allDocumentsUploaded = documents.length > 0 && documents.every(doc => doc.isUploaded);
+  const hasDocuments = documents.length > 0;
+  const isUploading = documents.some(doc => doc.isUploading) || isLoading;
 
   return (
     <div className="p-8">
@@ -224,17 +281,27 @@ export function ProviderDocumentsForm() {
             >
               <div className="flex items-center space-x-3 flex-1">
                 <div className="flex-shrink-0">
-                  {doc.isUploaded ? (
+                  {doc.error ? (
+                    <X className="w-5 h-5 text-red-500" />
+                  ) : doc.isUploaded ? (
                     <CheckCircle className="w-5 h-5 text-green-500" />
                   ) : (
                     <FileText className="w-5 h-5 text-green-600" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-green-800 dark:text-green-200 truncate">
+                  <p className={`text-sm font-medium truncate ${
+                    doc.error 
+                      ? 'text-red-800 dark:text-red-200' 
+                      : 'text-green-800 dark:text-green-200'
+                  }`}>
                     {doc.name}
                   </p>
-                  {!doc.isUploaded && (
+                  {doc.error ? (
+                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                      {doc.error}
+                    </p>
+                  ) : doc.isUploading ? (
                     <div className="mt-1">
                       <div className="w-full bg-green-200 dark:bg-green-800 rounded-full h-1">
                         <div
@@ -243,6 +310,10 @@ export function ProviderDocumentsForm() {
                         ></div>
                       </div>
                     </div>
+                  ) : !doc.isUploaded && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Ready to upload
+                    </p>
                   )}
                 </div>
               </div>
@@ -250,7 +321,7 @@ export function ProviderDocumentsForm() {
                 <span className="text-xs text-green-600 dark:text-green-400 font-medium">
                   {Math.round(doc.file.size / 1024)} KB
                 </span>
-                {!doc.isUploaded && (
+                {doc.isUploading && (
                   <span className="text-xs text-green-600 dark:text-green-400">
                     {doc.uploadProgress}%
                   </span>
@@ -281,10 +352,12 @@ export function ProviderDocumentsForm() {
         
         <Button
           onClick={handleSubmit}
-          disabled={!allDocumentsUploaded || isLoading}
-          className="bg-green-600 hover:bg-green-700 text-white font-medium px-6"
+          disabled={!hasDocuments || isUploading}
+          className="bg-green-600 hover:bg-green-700 text-white font-medium px-6 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isLoading ? 'Submitting...' : !allDocumentsUploaded ? 'Upload Documents' : 'Submit'}
+          {isUploading ? 'Uploading...' : 
+           !hasDocuments ? 'Select Documents First' : 
+           'Submit'}
         </Button>
       </div>
     </div>

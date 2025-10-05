@@ -1,10 +1,42 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/auth-store';
+import { apiService } from '@/lib/api';
+import { toast } from 'react-toastify';
 
 export function ProviderSubmittedForm() {
-  const { hideAuth, previousProviderStep } = useAuthStore();
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const { hideAuth, previousProviderStep, setUser } = useAuthStore();
+
+  // Complete onboarding when component mounts
+  useEffect(() => {
+    const completeOnboarding = async () => {
+      if (isCompleted) return;
+      
+      setIsCompleting(true);
+      try {
+        const result = await apiService.completeOnboarding();
+        
+        // Update user in store
+        if (result.user) {
+          setUser(result.user);
+        }
+        
+        setIsCompleted(true);
+        toast.success('Onboarding completed successfully!');
+      } catch (error) {
+        console.error('Failed to complete onboarding:', error);
+        toast.error('Failed to complete onboarding. Please try again.');
+      } finally {
+        setIsCompleting(false);
+      }
+    };
+
+    completeOnboarding();
+  }, [isCompleted, setUser]);
 
   const handleGoToDashboard = () => {
     hideAuth();
@@ -52,9 +84,15 @@ export function ProviderSubmittedForm() {
 
       {/* Status Message */}
       <div className="mb-8">
-        <p className="text-gray-600 dark:text-gray-400 text-sm">
-          Our team is reviewing your credentials. You'll receive an email once your account is verified.
-        </p>
+        {isCompleting ? (
+          <p className="text-blue-600 dark:text-blue-400 text-sm">
+            Completing your onboarding...
+          </p>
+        ) : (
+          <p className="text-gray-600 dark:text-gray-400 text-sm">
+            Our team is reviewing your credentials. You&apos;ll receive an email once your account is verified.
+          </p>
+        )}
       </div>
 
       {/* Action Buttons */}
@@ -69,9 +107,10 @@ export function ProviderSubmittedForm() {
         
         <Button
           onClick={handleGoToDashboard}
-          className="bg-green-600 hover:bg-green-700 text-white font-medium px-6"
+          disabled={isCompleting}
+          className="bg-green-600 hover:bg-green-700 text-white font-medium px-6 disabled:opacity-50"
         >
-          Go to Dashboard →
+          {isCompleting ? 'Completing...' : 'Go to Dashboard →'}
         </Button>
       </div>
     </div>
