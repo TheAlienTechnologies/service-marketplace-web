@@ -1,17 +1,23 @@
 'use client';
 
+import { Search, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/store/auth-store';
 
 export function Header() {
   const { isAuthenticated, user, showAuth, signOut, startUserFlow, startProviderFlow } = useAuthStore();
 
   return (
-    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="bg-white border-b border-gray-200">
+      <div className="max-w-7xl mx-auto px-6">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
+          {/* Left Group: Logo Only */}
           <div className="flex items-center">
             <div className="w-8 h-8">
               <img 
@@ -20,70 +26,115 @@ export function Header() {
                 className="w-full h-full"
               />
             </div>
-            <span className="ml-3 text-xl font-semibold text-gray-900 dark:text-white">
+            <span className="ml-2 text-xl font-bold text-green-600">
               Pavodah
             </span>
           </div>
 
-          {/* Navigation */}
-          <nav className="hidden md:flex space-x-8">
-            <a href="#" className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400">
-              Services
-            </a>
-            <a href="#" className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400">
-              About Us
-            </a>
-            <a href="#" className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400">
-              How it Works
-            </a>
-            <button 
-              onClick={startProviderFlow}
-              className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400"
-            >
-              Become a Provider
-            </button>
-            <a href="#" className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400">
-              Help
-            </a>
-          </nav>
+          {/* Right Group - Navigation + Auth Buttons */}
+          <div className="flex items-center space-x-8">
+            {/* Navigation Items */}
+            <div className="hidden lg:flex items-center space-x-8">
+              {/* Search Icon */}
+              <button className="text-gray-500 hover:text-gray-700">
+                <Search className="w-5 h-5" />
+              </button>
 
-          {/* Auth Buttons & Theme Toggle */}
-          <div className="flex items-center space-x-4">
-            {/* Theme Toggle */}
-            <ThemeToggle className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" />
-            
-            {isAuthenticated ? (
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  Welcome, {user?.firstName || user?.email}
-                </span>
-                <Button
-                  onClick={signOut}
-                  variant="outline"
-                  size="sm"
-                >
-                  Sign Out
-                </Button>
-              </div>
-            ) : (
-              <>
-                <Button
-                  onClick={() => showAuth('signin')}
-                  variant="ghost"
-                  size="sm"
-                  className="text-gray-700 dark:text-gray-300"
-                >
-                  Sign In
-                </Button>
-                <Button
-                  onClick={startUserFlow}
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  Get Started
-                </Button>
-              </>
-            )}
+              {/* Categories Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center space-x-1 text-gray-700 hover:text-green-600 font-medium text-sm">
+                    <span>Categories</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem>
+                    <span>Home Services</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <span>Digital Services</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <span>Professional Services</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <span>Creative Services</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <span>Business Services</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Help & Support Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center space-x-1 text-gray-700 hover:text-green-600 font-medium text-sm">
+                    <span>Help & Support</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem>
+                    <span>Help Center</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <span>Contact Support</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <span>Community</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <span>Trust & Safety</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Become a seller */}
+              <button 
+                onClick={startProviderFlow}
+                className="text-gray-700 hover:text-green-600 font-medium text-sm"
+              >
+                Become a seller
+              </button>
+            </div>
+
+            {/* Auth Buttons */}
+            <div className="flex items-center space-x-4">
+              {isAuthenticated ? (
+                <div className="flex items-center space-x-4">
+                  <span className="text-sm text-gray-700">
+                    Welcome, {user?.firstName || user?.email}
+                  </span>
+                  <Button
+                    onClick={signOut}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Sign Out
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Button
+                    onClick={() => showAuth('signin')}
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-700 hover:text-gray-900 font-medium text-sm px-4 py-2"
+                  >
+                    Sign in
+                  </Button>
+                  <Button
+                    onClick={startUserFlow}
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 text-white font-medium text-sm px-6 py-2 rounded-lg"
+                  >
+                    Sign up
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>

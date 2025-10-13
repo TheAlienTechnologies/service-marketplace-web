@@ -1,11 +1,14 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { Header } from '@/components/layout/header';
-import { AuthModal } from '@/components/auth/auth-modal';
-import { useAuthStore } from '@/store/auth-store';
-import { mockServices, mockServiceCategories } from '@/lib/mock-data';
-import { Star, MapPin } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Header } from "@/components/layout/header";
+import { HeroSection } from "@/components/sections/hero-section";
+import { ServiceCarousel } from "@/components/sections/service-carousel";
+import { AuthModal } from "@/components/auth/auth-modal";
+import { useAuthStore } from "@/store/auth-store";
+import { mockServices, mockServiceCategories } from "@/lib/mock-data";
+import { mockBestsellers, mockMostViewed } from "@/lib/mock-bestsellers";
+import { Star, MapPin } from "lucide-react";
 
 export default function Home() {
   const { showAuth } = useAuthStore();
@@ -13,39 +16,35 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header />
-      
+
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-green-600 to-green-700 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Find & hire trusted
-              <br />
-              providers with AVADgh
-            </h1>
-            <p className="text-xl md:text-2xl mb-8 text-green-100">
-              Connect with skilled service providers in your area
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                onClick={() => useAuthStore.getState().startUserFlow()}
-                size="lg"
-                className="bg-white text-green-600 hover:bg-gray-100 font-semibold px-8 py-3 text-lg"
-              >
-                Get Started
-              </Button>
-              <Button
-                onClick={() => useAuthStore.getState().startProviderFlow()}
-                size="lg"
-                variant="outline"
-                className="border-white text-white hover:bg-white hover:text-green-600 font-semibold px-8 py-3 text-lg"
-              >
-                Become a Provider
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
+      <HeroSection />
+
+      {/* Bestsellers Section */}
+      <ServiceCarousel
+        services={mockBestsellers}
+        title="Bestsellers"
+        showAllLink={{
+          text: "See all best sellers",
+          onClick: () => console.log("View all bestsellers"),
+        }}
+        onServiceClick={(service) =>
+          console.log("Service clicked:", service.id)
+        }
+      />
+
+      {/* Most Viewed Section */}
+      <ServiceCarousel
+        services={mockMostViewed}
+        title="Most Viewed"
+        showAllLink={{
+          text: "See all most viewed",
+          onClick: () => console.log("View all most viewed"),
+        }}
+        onServiceClick={(service) =>
+          console.log("Service clicked:", service.id)
+        }
+      />
 
       {/* Service Categories */}
       <section className="py-16">
@@ -58,7 +57,7 @@ export default function Home() {
               Browse our most requested service categories
             </p>
           </div>
-          
+
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
             {mockServiceCategories.slice(0, 12).map((category) => (
               <div
@@ -86,7 +85,7 @@ export default function Home() {
               Top-rated services from trusted providers
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {mockServices.map((service) => (
               <div
@@ -167,39 +166,80 @@ export default function Home() {
                 <span className="ml-3 text-xl font-semibold">AVADgh</span>
               </div>
               <p className="text-gray-400">
-                Connecting trusted service providers with customers across Ghana.
+                Connecting trusted service providers with customers across
+                Ghana.
               </p>
             </div>
-            
+
             <div>
               <h3 className="font-semibold mb-4">For Customers</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white">Browse Services</a></li>
-                <li><a href="#" className="hover:text-white">How it Works</a></li>
-                <li><a href="#" className="hover:text-white">Safety</a></li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Browse Services
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    How it Works
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Safety
+                  </a>
+                </li>
               </ul>
             </div>
-            
+
             <div>
               <h3 className="font-semibold mb-4">For Providers</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white">Become a Provider</a></li>
-                <li><a href="#" className="hover:text-white">Provider Resources</a></li>
-                <li><a href="#" className="hover:text-white">Success Stories</a></li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Become a Provider
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Provider Resources
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Success Stories
+                  </a>
+                </li>
               </ul>
             </div>
-            
+
             <div>
               <h3 className="font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white">Help Center</a></li>
-                <li><a href="#" className="hover:text-white">Contact Us</a></li>
-                <li><a href="#" className="hover:text-white">Terms of Service</a></li>
-                <li><a href="#" className="hover:text-white">Privacy Policy</a></li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Help Center
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Contact Us
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Terms of Service
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-white">
+                    Privacy Policy
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
-          
+
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
             <p>&copy; 2024 AVADgh. All rights reserved.</p>
           </div>
