@@ -7,11 +7,13 @@ import { ServiceCarousel } from "@/components/sections/service-carousel";
 import { CategoryCarousel } from "@/components/sections/category-carousel";
 import { MomentsSection } from "@/components/sections/moments-section";
 import { HowItWorksSection } from "@/components/sections/how-it-works-section";
+import { GetInspiredSection } from "@/components/sections/get-inspired-section";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { useAuthStore } from "@/store/auth-store";
 import { mockServices, mockServiceCategories } from "@/lib/mock-data";
 import { mockBestsellers, mockMostViewed } from "@/lib/mock-bestsellers";
 import { mockPopularCategories } from "@/lib/mock-categories";
+import { mockInspirations } from "@/lib/mock-inspirations";
 import { Star, MapPin } from "lucide-react";
 
 export default function Home() {
@@ -64,6 +66,9 @@ export default function Home() {
           console.log("Category clicked:", category.id)
         }
       />
+
+      {/* Get Inspired Section */}
+      <GetInspiredSection inspirations={mockInspirations} />
 
       {/* Service Categories */}
       <section className="py-16">
