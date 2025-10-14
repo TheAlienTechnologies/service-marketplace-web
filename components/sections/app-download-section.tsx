@@ -4,7 +4,7 @@ import Image from "next/image";
 
 export function AppDownloadSection() {
   return (
-    <section className="relative bg-gradient-to-br from-[#1a3a2e] to-[#0d1f1a] dark:from-gray-900 dark:to-gray-950 overflow-hidden">
+    <section className="relative bg-gradient-to-br from-[#1a3a2e] to-[#0d1f1a] dark:from-gray-900 dark:to-gray-950 overflow-hidden md:mb-[96px]">
       <div className="w-[80%] mx-auto pt-[31px]">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-0 items-center min-h-[400px] md:min-h-[500px]">
           {/* Left Side - Phone Image (2/5) */}
