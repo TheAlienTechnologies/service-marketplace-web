@@ -8,6 +8,7 @@ import { CategoryCarousel } from "@/components/sections/category-carousel";
 import { MomentsSection } from "@/components/sections/moments-section";
 import { HowItWorksSection } from "@/components/sections/how-it-works-section";
 import { GetInspiredSection } from "@/components/sections/get-inspired-section";
+import { AppDownloadSection } from "@/components/sections/app-download-section";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { useAuthStore } from "@/store/auth-store";
 import { mockServices, mockServiceCategories } from "@/lib/mock-data";
@@ -69,6 +70,9 @@ export default function Home() {
 
       {/* Get Inspired Section */}
       <GetInspiredSection inspirations={mockInspirations} />
+
+      {/* App Download Section */}
+      <AppDownloadSection />
 
       {/* Service Categories */}
       <section className="py-16">
