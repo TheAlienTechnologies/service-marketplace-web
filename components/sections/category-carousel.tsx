@@ -3,7 +3,7 @@
 import React, { useRef } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Autoplay } from "swiper/modules";
-import { ServiceCard, ServiceCardData } from "./service-card";
+import { CategoryCard, CategoryCardData } from "./category-card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Swiper as SwiperType } from "swiper";
 
@@ -12,47 +12,31 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
-interface ServiceCarouselProps {
-  services: ServiceCardData[];
+interface CategoryCarouselProps {
+  categories: CategoryCardData[];
   title: string;
   subtitle?: string;
-  onServiceClick?: (service: ServiceCardData) => void;
-  showAllLink?: {
-    text: string;
-    onClick: () => void;
-  };
+  onCategoryClick?: (category: CategoryCardData) => void;
 }
 
-export function ServiceCarousel({
-  services,
+export function CategoryCarousel({
+  categories,
   title,
   subtitle,
-  onServiceClick,
-  showAllLink,
-}: ServiceCarouselProps) {
+  onCategoryClick,
+}: CategoryCarouselProps) {
   const swiperRef = useRef<SwiperType | null>(null);
 
   return (
-    <section className="py-12">
+    <section className="py-12 bg-gray-50 dark:bg-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              {title}
-            </h2>
-            {subtitle && (
-              <p className="text-gray-600 dark:text-gray-400">{subtitle}</p>
-            )}
-          </div>
-
-          {showAllLink && (
-            <button
-              onClick={showAllLink.onClick}
-              className="px-6 py-2.5 rounded-lg bg-brand-900 hover:bg-brand-700 text-white font-semibold transition-colors duration-200 whitespace-nowrap"
-            >
-              {showAllLink.text}
-            </button>
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            {title}
+          </h2>
+          {subtitle && (
+            <p className="text-gray-600 dark:text-gray-400">{subtitle}</p>
           )}
         </div>
 
@@ -88,11 +72,11 @@ export function ServiceCarousel({
             }}
             className="!pb-12"
           >
-            {services.map((service) => (
-              <SwiperSlide key={service.id} className="h-auto">
-                <ServiceCard
-                  service={service}
-                  onClick={() => onServiceClick?.(service)}
+            {categories.map((category) => (
+              <SwiperSlide key={category.id} className="h-auto">
+                <CategoryCard
+                  category={category}
+                  onClick={() => onCategoryClick?.(category)}
                 />
               </SwiperSlide>
             ))}

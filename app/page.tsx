@@ -4,10 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/header";
 import { HeroSection } from "@/components/sections/hero-section";
 import { ServiceCarousel } from "@/components/sections/service-carousel";
+import { CategoryCarousel } from "@/components/sections/category-carousel";
+import { MomentsSection } from "@/components/sections/moments-section";
+import { HowItWorksSection } from "@/components/sections/how-it-works-section";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { useAuthStore } from "@/store/auth-store";
 import { mockServices, mockServiceCategories } from "@/lib/mock-data";
 import { mockBestsellers, mockMostViewed } from "@/lib/mock-bestsellers";
+import { mockPopularCategories } from "@/lib/mock-categories";
 import { Star, MapPin } from "lucide-react";
 
 export default function Home() {
@@ -33,6 +37,9 @@ export default function Home() {
         }
       />
 
+      {/* Moments Captured Section */}
+      <MomentsSection />
+
       {/* Most Viewed Section */}
       <ServiceCarousel
         services={mockMostViewed}
@@ -43,6 +50,18 @@ export default function Home() {
         }}
         onServiceClick={(service) =>
           console.log("Service clicked:", service.id)
+        }
+      />
+
+      {/* How it Works Section */}
+      <HowItWorksSection />
+
+      {/* Popular Service Categories Carousel */}
+      <CategoryCarousel
+        categories={mockPopularCategories}
+        title="Popular Service"
+        onCategoryClick={(category) =>
+          console.log("Category clicked:", category.id)
         }
       />
 

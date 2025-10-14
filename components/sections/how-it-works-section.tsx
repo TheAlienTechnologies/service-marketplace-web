@@ -1,0 +1,40 @@
+"use client";
+
+import Image from "next/image";
+
+export function HowItWorksSection() {
+  return (
+    <section className="py-16 md:py-20 lg:py-24 bg-white dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-12 md:mb-16">
+          <div className="flex items-center justify-start gap-4 flex-wrap mb-4">
+            <h2 className="text-2xl md:text-3xl lg:text-3xl font-bold text-gray-900 dark:text-white">
+              Trusted pros. Quality work.
+            </h2>
+            <div className="flex items-center gap-2 bg-[#ECFDF3] rounded-3xl p-[4px]">
+              <span className="inline-flex items-center bg-[#4A7C59] dark:bg-brand-900 text-white text-xs font-semibold px-5 py-2 rounded-full whitespace-nowrap">
+                How It Works
+              </span>
+              <p className="text-sm font-[500] text-marketplace-400 dark:text-gray-400 rounded-sm">
+                A simple, safe process to get the job done right.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Process Image */}
+        <div className="relative w-full max-w-5xl mx-auto">
+          <Image
+            src="/assets/site-images/home_trusted_pros.png"
+            alt="How it works process - Browse, Compare, Book, and Get the Job Done"
+            width={1200}
+            height={800}
+            className="w-full h-auto"
+            priority
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
