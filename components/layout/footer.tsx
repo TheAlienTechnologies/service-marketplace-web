@@ -11,21 +11,21 @@ import {
 
 export function Footer() {
   const categories = [
-    "Graphics & Design",
-    "Digital Marketing",
-    "Writing & Translation",
-    "Video & Animation",
-    "Music & Audio",
-    "Programming & Tech",
-    "AI Services",
-    "Consulting",
-    "Data",
-    "Business",
-    "Personal Growth & Hobbies",
-    "Photography",
-    "Finance",
-    "End-to-End Projects",
-    "Service Catalog",
+    { label: "Graphics & Design", slug: "graphics-design" },
+    { label: "Digital Marketing", slug: "digital-marketing" },
+    { label: "Writing & Translation", slug: "writing-translation" },
+    { label: "Video & Animation", slug: "video-animation" },
+    { label: "Music & Audio", slug: "music-audio" },
+    { label: "Programming & Tech", slug: "programming-tech" },
+    { label: "AI Services", slug: "ai-services" },
+    { label: "Consulting", slug: "consulting" },
+    { label: "Data", slug: "data" },
+    { label: "Business", slug: "business" },
+    { label: "Personal Growth & Hobbies", slug: "personal-growth-hobbies" },
+    { label: "Photography", slug: "photography" },
+    { label: "Finance", slug: "finance" },
+    { label: "End-to-End Projects", slug: "end-to-end-projects" },
+    { label: "Service Catalog", slug: "service-catalog" },
   ];
 
   const companyLinks = [
@@ -117,10 +117,10 @@ export function Footer() {
               {categories.map((category, index) => (
                 <li key={index}>
                   <Link
-                    href="#"
+                    href={`/categories/${category.slug}`}
                     className="text-sm text-gray-300 hover:text-white transition-colors"
                   >
-                    {category}
+                    {category.label}
                   </Link>
                 </li>
               ))}

@@ -1,35 +1,32 @@
-'use client';
+"use client";
 
-import { Search, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
-import { useAuthStore } from '@/store/auth-store';
+import { Search, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuthStore } from "@/store/auth-store";
+import { Logo } from "./logo";
 
 export function Header() {
-  const { isAuthenticated, user, showAuth, signOut, startUserFlow, startProviderFlow } = useAuthStore();
+  const {
+    isAuthenticated,
+    user,
+    showAuth,
+    signOut,
+    startUserFlow,
+    startProviderFlow,
+  } = useAuthStore();
 
   return (
     <header className="bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex justify-between items-center h-16">
           {/* Left Group: Logo Only */}
-          <div className="flex items-center">
-            <div className="w-8 h-8">
-              <img 
-                src="/assets/logo/logo.svg" 
-                alt="Pavodah Logo" 
-                className="w-full h-full"
-              />
-            </div>
-            <span className="ml-2 text-xl font-bold text-green-600">
-              Pavodah
-            </span>
-          </div>
+          <Logo />
 
           {/* Right Group - Navigation + Auth Buttons */}
           <div className="flex items-center space-x-8">
@@ -92,7 +89,7 @@ export function Header() {
               </DropdownMenu>
 
               {/* Become a seller */}
-              <button 
+              <button
                 onClick={startProviderFlow}
                 className="text-gray-700 hover:text-green-600 font-medium text-sm"
               >
@@ -107,18 +104,14 @@ export function Header() {
                   <span className="text-sm text-gray-700">
                     Welcome, {user?.firstName || user?.email}
                   </span>
-                  <Button
-                    onClick={signOut}
-                    variant="outline"
-                    size="sm"
-                  >
+                  <Button onClick={signOut} variant="outline" size="sm">
                     Sign Out
                   </Button>
                 </div>
               ) : (
                 <>
                   <Button
-                    onClick={() => showAuth('signin')}
+                    onClick={() => showAuth("signin")}
                     variant="ghost"
                     size="sm"
                     className="text-gray-700 hover:text-gray-900 font-medium text-sm px-4 py-2"
