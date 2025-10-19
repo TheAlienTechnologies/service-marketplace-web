@@ -77,9 +77,6 @@ export default function Home() {
 
       {/* Footer */}
       <Footer />
-
-      {/* Authentication Modal */}
-      <AuthModal />
     </div>
   );
 }

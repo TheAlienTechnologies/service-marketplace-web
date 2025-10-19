@@ -56,8 +56,8 @@ export function Pagination({
   const pages = getPageNumbers();
 
   return (
-    <div className="flex items-center justify-center gap-2 py-8">
-      {/* Previous Button */}
+    <div className="flex items-center justify-between py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Previous Button - Left Section */}
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
@@ -67,7 +67,7 @@ export function Pagination({
         Previous
       </button>
 
-      {/* Page Numbers */}
+      {/* Page Numbers - Center Section */}
       <div className="flex items-center gap-1">
         {pages.map((page, index) => {
           if (page === "...") {
@@ -100,7 +100,7 @@ export function Pagination({
         })}
       </div>
 
-      {/* Next Button */}
+      {/* Next Button - Right Section */}
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
