@@ -8,11 +8,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { HorizontalSeparator } from "../layout/horizontal-separator";
-import { SkillDropdown } from "./skill-dropdown";
-import { PriceRangeDropdown } from "./price-range-dropdown";
-import { RatingDropdown } from "./rating-dropdown";
-import { DeliveryTimeDropdown } from "./delivery-time-dropdown";
+import { HorizontalSeparator } from "../../layout/horizontal-separator";
+import { SkillDropdown } from "./filters/skill-dropdown";
+import { PriceRangeDropdown } from "./filters/price-range-dropdown";
+import { RatingDropdown } from "./filters/rating-dropdown";
+import { DeliveryTimeDropdown } from "./filters/delivery-time-dropdown";
 
 interface CategoryFiltersProps {
   categoryName: string;

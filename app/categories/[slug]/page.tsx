@@ -3,15 +3,15 @@
 import { useState } from "react";
 import { CategoryHeader } from "@/components/layout/category-header";
 import { Footer } from "@/components/layout/footer";
-import { CategoryFilters } from "@/components/sections/category-filters";
-import { CategoryResultsGrid } from "@/components/sections/category-results-grid";
+import { CategoryFilters } from "@/components/sections/category/category-filters";
+import { CategoryResultsGrid } from "@/components/sections/category/category-results-grid";
 import { Pagination } from "@/components/ui/pagination";
 import { mockCategoryResults } from "@/lib/mock-category-results";
 import { HorizontalSeparator } from "@/components/layout/horizontal-separator";
 import { mockBestsellers } from "@/lib/mock-bestsellers";
-import { ServiceCarousel } from "@/components/sections/service-carousel";
-import { AppDownloadSection } from "@/components/sections/app-download-section";
-import { GetInspiredSection } from "@/components/sections/get-inspired-section";
+import { ServiceCarousel } from "@/components/sections/carousels/service-carousel";
+import { AppDownloadSection } from "@/components/sections/home/app-download-section";
+import { GetInspiredSection } from "@/components/sections/home/get-inspired-section";
 import { mockInspirations } from "@/lib/mock-inspirations";
 
 const ITEMS_PER_PAGE = 12;
@@ -54,7 +54,6 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
         <div className="mt-8">
           <HorizontalSeparator />
         </div>
-
 
         {/* Pagination */}
         {totalPages > 1 && (

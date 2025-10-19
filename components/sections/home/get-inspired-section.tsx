@@ -1,6 +1,9 @@
 "use client";
 
-import { InspirationCard, InspirationCardData } from "./inspiration-card";
+import {
+  InspirationCard,
+  InspirationCardData,
+} from "../cards/inspiration-card";
 
 interface GetInspiredSectionProps {
   inspirations: InspirationCardData[];

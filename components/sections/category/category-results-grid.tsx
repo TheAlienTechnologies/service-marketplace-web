@@ -1,6 +1,6 @@
 "use client";
 
-import { ServiceCard, ServiceCardData } from "./service-card";
+import { ServiceCard, ServiceCardData } from "../cards/service-card";
 
 interface CategoryResultsGridProps {
   services: ServiceCardData[];
