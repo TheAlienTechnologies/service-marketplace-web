@@ -1,0 +1,145 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import { Star, ThumbsUp, ThumbsDown, ChevronDown } from "lucide-react";
+
+interface Review {
+  id: string;
+  reviewerName: string;
+  reviewerAvatar: string;
+  rating: number;
+  date: string;
+  reviewText: string;
+  likes: number;
+  dislikes: number;
+}
+
+interface RecentReviewsProps {
+  reviews: Review[];
+  initialVisible?: number;
+}
+
+export function RecentReviews({
+  reviews,
+  initialVisible = 6,
+}: RecentReviewsProps) {
+  const [visibleCount, setVisibleCount] = useState(initialVisible);
+  const [showAll, setShowAll] = useState(false);
+
+  const visibleReviews = showAll ? reviews : reviews.slice(0, visibleCount);
+  const hasMore = reviews.length > visibleCount;
+
+  const handleShowMore = () => {
+    if (showAll) {
+      setShowAll(false);
+      setVisibleCount(initialVisible);
+    } else {
+      setShowAll(true);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
+      {/* Header */}
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          Recent reviews
+        </h2>
+        <p className="text-gray-600 dark:text-gray-400 text-sm">
+          See what clients are saying about this freelancer
+        </p>
+        {/* Horizontal line */}
+        <div className="mt-4 h-px bg-gray-200 dark:bg-gray-700" />
+      </div>
+
+      {/* Reviews List */}
+      <div className="space-y-6">
+        {visibleReviews.map((review) => (
+          <div key={review.id} className="flex gap-4">
+            {/* Profile Picture */}
+            <div className="flex-shrink-0">
+              <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                <Image
+                  src={review.reviewerAvatar}
+                  alt={review.reviewerName}
+                  width={48}
+                  height={48}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+
+            {/* Review Content */}
+            <div className="flex-1 min-w-0">
+              {/* Reviewer Info */}
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
+                  {review.reviewerName}
+                </h3>
+                <div className="flex items-center gap-1">
+                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {review.rating.toFixed(1)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Date */}
+              <p className="text-xs text-gray-500 dark:text-gray-500 mb-3">
+                {formatDate(review.date)}
+              </p>
+
+              {/* Review Text */}
+              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-3">
+                "{review.reviewText}"
+              </p>
+
+              {/* Engagement Metrics */}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1">
+                  <ThumbsUp className="w-4 h-4 text-gray-400" />
+                  <span className="text-xs text-gray-500 dark:text-gray-500">
+                    {review.likes}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <ThumbsDown className="w-4 h-4 text-gray-400" />
+                  <span className="text-xs text-gray-500 dark:text-gray-500">
+                    {review.dislikes}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Show More Button */}
+      {hasMore && (
+        <div className="mt-6">
+          <button
+            onClick={handleShowMore}
+            className="flex items-center gap-2 text-brand-600 hover:text-brand-700 dark:text-brand-500 dark:hover:text-brand-400 font-medium text-sm transition-colors"
+          >
+            <span>{showAll ? "Show less" : "Show more"}</span>
+            <ChevronDown
+              className={`w-4 h-4 transition-transform duration-200 ${
+                showAll ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

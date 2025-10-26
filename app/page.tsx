@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Header } from "@/components/layout/header";
+import { HomeHeader } from "@/components/layout/home-header";
 import { Footer } from "@/components/layout/footer";
 import { HeroSection } from "@/components/sections/hero-section";
 import { ServiceCarousel } from "@/components/sections/carousels/service-carousel";
@@ -23,7 +23,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Header />
+      <HomeHeader />
 
       {/* Hero Section */}
       <HeroSection />

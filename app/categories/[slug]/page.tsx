@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CategoryHeader } from "@/components/layout/category-header";
+import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { CategoryFilters } from "@/components/sections/category/category-filters";
 import { CategoryResultsGrid } from "@/components/sections/category/category-results-grid";
@@ -39,7 +39,7 @@ export default function CategoryPage({ params }: { params: { slug: string } }) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <CategoryHeader />
+      <Header />
 
       {/* Page Content */}
       <main className="">

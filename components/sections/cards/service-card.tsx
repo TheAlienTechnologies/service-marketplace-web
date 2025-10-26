@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import React from "react";
 
 export interface ServiceCardData {
@@ -20,8 +21,9 @@ interface ServiceCardProps {
 
 export function ServiceCard({ service, onClick }: ServiceCardProps) {
   return (
-    <div
-      className="bg-white dark:bg-gray-800 rounded-[20px] overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"
+    <Link
+      href={`/services/${service.id}`}
+      className="block bg-white dark:bg-gray-800 rounded-[20px] overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"
       onClick={onClick}
     >
       {/* Service Image with Overlay */}
@@ -100,6 +102,6 @@ export function ServiceCard({ service, onClick }: ServiceCardProps) {
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
