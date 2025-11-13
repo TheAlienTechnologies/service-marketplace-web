@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/store/auth-store";
 import { Logo } from "./logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function HomeHeader() {
   const {
@@ -36,6 +37,9 @@ export function HomeHeader() {
               <button className="text-gray-500 hover:text-gray-700">
                 <Search className="w-5 h-5" />
               </button>
+
+              {/* Theme Toggle */}
+              <ThemeToggle />
 
               {/* Categories Dropdown */}
               <DropdownMenu>

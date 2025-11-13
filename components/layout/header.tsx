@@ -18,8 +18,11 @@ import {
 import { useAuthStore } from "@/store/auth-store";
 import Image from "next/image";
 import { Logo } from "./logo";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { useRouter } from "next/navigation";
 
 export function Header() {
+  const router = useRouter();
   const {
     isAuthenticated,
     user,
@@ -91,6 +94,10 @@ export function Header() {
 
             {/* Divider */}
             <div className="h-6 w-px bg-gray-300"></div>
+
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
             {/* Language Selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -159,7 +166,7 @@ export function Header() {
                   <DropdownMenuItem>
                     <span>My Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push("/orders")}>
                     <span>My Orders</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem>

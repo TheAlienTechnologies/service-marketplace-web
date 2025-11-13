@@ -1,5 +1,6 @@
 "use client";
 
+import { use } from "react";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { ServiceDetailHeader } from "@/components/sections/service-detail/service-detail-header";
@@ -17,9 +18,9 @@ import { AppDownloadSection } from "@/components/sections/home/app-download-sect
 export default function ServiceDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const serviceId = params.id;
+  const { id: serviceId } = use(params);
 
   const serviceData = {
     category: "Architecture & Interior Design",
