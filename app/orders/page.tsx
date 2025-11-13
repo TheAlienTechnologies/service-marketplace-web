@@ -1,157 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import Image from "next/image";
 import { Mail, ChevronRight, RotateCcw, Star } from "lucide-react";
 import Link from "next/link";
-
-type OrderStatus = "awaiting" | "in-progress" | "completed" | "declined";
-
-interface Order {
-  id: string;
-  orderId: string;
-  providerName: string;
-  providerAvatar: string;
-  serviceCategory: string;
-  status: OrderStatus;
-  date: string;
-  progressStage: number; // 0-3: Order placed, Awaiting, In-progress, Completed
-}
-
-const mockOrders: Order[] = [
-  // Awaiting orders
-  {
-    id: "1",
-    orderId: "5764892",
-    providerName: "Robert sam",
-    providerAvatar: "/assets/temp/user/u1.jpg",
-    serviceCategory: "Architecture & Interior Design",
-    status: "awaiting",
-    date: "August 29, 2025",
-    progressStage: 1, // At "Awaiting" stage
-  },
-  {
-    id: "2",
-    orderId: "5764893",
-    providerName: "Robert sam",
-    providerAvatar: "/assets/temp/user/u1.jpg",
-    serviceCategory: "Architecture & Interior Design",
-    status: "awaiting",
-    date: "August 29, 2025",
-    progressStage: 1,
-  },
-  {
-    id: "3",
-    orderId: "5764894",
-    providerName: "Robert sam",
-    providerAvatar: "/assets/temp/user/u1.jpg",
-    serviceCategory: "Architecture & Interior Design",
-    status: "awaiting",
-    date: "August 29, 2025",
-    progressStage: 1,
-  },
-  // In-progress orders
-  {
-    id: "4",
-    orderId: "5764895",
-    providerName: "Robert sam",
-    providerAvatar: "/assets/temp/user/u1.jpg",
-    serviceCategory: "Architecture & Interior Design",
-    status: "in-progress",
-    date: "August 29, 2025",
-    progressStage: 2, // At "In-progress" stage
-  },
-  {
-    id: "5",
-    orderId: "5764896",
-    providerName: "Robert sam",
-    providerAvatar: "/assets/temp/user/u1.jpg",
-    serviceCategory: "Architecture & Interior Design",
-    status: "in-progress",
-    date: "August 29, 2025",
-    progressStage: 2,
-  },
-  {
-    id: "6",
-    orderId: "5764897",
-    providerName: "Robert sam",
-    providerAvatar: "/assets/temp/user/u1.jpg",
-    serviceCategory: "Architecture & Interior Design",
-    status: "in-progress",
-    date: "August 29, 2025",
-    progressStage: 2,
-  },
-  // Completed orders
-  {
-    id: "7",
-    orderId: "5764898",
-    providerName: "Robert sam",
-    providerAvatar: "/assets/temp/user/u1.jpg",
-    serviceCategory: "Architecture & Interior Design",
-    status: "completed",
-    date: "August 29, 2025",
-    progressStage: 3, // At "Completed" stage
-  },
-  {
-    id: "11",
-    orderId: "5764902",
-    providerName: "Robert sam",
-    providerAvatar: "/assets/temp/user/u1.jpg",
-    serviceCategory: "Architecture & Interior Design",
-    status: "completed",
-    date: "August 29, 2025",
-    progressStage: 3,
-  },
-  {
-    id: "12",
-    orderId: "5764903",
-    providerName: "Robert sam",
-    providerAvatar: "/assets/temp/user/u1.jpg",
-    serviceCategory: "Architecture & Interior Design",
-    status: "completed",
-    date: "August 28, 2025",
-    progressStage: 3,
-  },
-  // Declined orders
-  {
-    id: "8",
-    orderId: "5764899",
-    providerName: "Robert sam",
-    providerAvatar: "/assets/temp/user/u1.jpg",
-    serviceCategory: "Architecture & Interior Design",
-    status: "declined",
-    date: "August 28, 2025",
-    progressStage: 0, // At "Order placed" stage only
-  },
-  {
-    id: "9",
-    orderId: "5764900",
-    providerName: "Robert sam",
-    providerAvatar: "/assets/temp/user/u1.jpg",
-    serviceCategory: "Architecture & Interior Design",
-    status: "declined",
-    date: "August 26, 2025",
-    progressStage: 0,
-  },
-  {
-    id: "10",
-    orderId: "5764901",
-    providerName: "Robert sam",
-    providerAvatar: "/assets/temp/user/u1.jpg",
-    serviceCategory: "Architecture & Interior Design",
-    status: "declined",
-    date: "August 25, 2025",
-    progressStage: 0,
-  },
-];
-
-const progressStages = ["Order placed", "Awaiting", "In-progress", "Completed"];
+import {
+  mockOrders,
+  progressStages,
+  type OrderStatus,
+  type OrderWithSummary,
+} from "@/lib/orders-data";
 
 export default function OrdersPage() {
+  const router = useRouter();
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus>("awaiting");
-  const [orders] = useState<Order[]>(mockOrders);
+  const [orders] = useState<OrderWithSummary[]>(mockOrders);
 
   const filteredOrders = orders.filter(
     (order) => order.status === selectedStatus
@@ -343,7 +209,12 @@ export default function OrdersPage() {
                       <button className="px-4 py-2 bg-brand-900 hover:bg-brand-700 text-white rounded-lg font-medium text-sm transition-colors">
                         Accept
                       </button>
-                      <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                      <button
+                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                        onClick={() =>
+                          router.push(`/orders/${order.id}/review`)
+                        }
+                      >
                         <Star className="w-4 h-4" />
                         Leave a Review
                       </button>
