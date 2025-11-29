@@ -47,6 +47,36 @@ export default function OrderDetailsPage({ params }: OrderDetailsPageProps) {
           My orders
         </h1>
 
+        {/* Status tabs (shared top section) */}
+        <div className="mb-6">
+          <div className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-1 py-1">
+            {["awaiting", "in-progress", "completed", "declined"].map(
+              (statusKey) => {
+                const label =
+                  statusKey === "in-progress"
+                    ? "In-progress"
+                    : statusKey.charAt(0).toUpperCase() + statusKey.slice(1);
+
+                const isActive = order.status === statusKey;
+
+                return (
+                  <Link
+                    key={statusKey}
+                    href="/orders"
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-white dark:bg-gray-900 text-brand-800 dark:text-brand-400 shadow-sm"
+                        : "bg-transparent text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                    }`}
+                  >
+                    {label}
+                  </Link>
+                );
+              }
+            )}
+          </div>
+        </div>
+
         {/* Breadcrumbs */}
         <nav className="text-sm text-gray-500 dark:text-gray-400 mb-6 flex items-center gap-1">
           <Link
@@ -223,8 +253,8 @@ export default function OrderDetailsPage({ params }: OrderDetailsPageProps) {
                   </span>
                 </div>
                 <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                  The freelancer has declined your order. Don&apos;t worry — your
-                  payment has not been charged. You can choose another
+                  The freelancer has declined your order. Don&apos;t worry —
+                  your payment has not been charged. You can choose another
                   professional or explore similar services.
                 </p>
               </div>
@@ -235,5 +265,3 @@ export default function OrderDetailsPage({ params }: OrderDetailsPageProps) {
     </div>
   );
 }
-
-

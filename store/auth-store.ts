@@ -32,7 +32,10 @@ interface AuthStore extends AuthState {
 
 export const useAuthStore = create<AuthStore>()(
   persist(
-    (set, get) => ({
+    (set, get) => (
+      
+      
+      {
       // Initial state
       user: null,
       isAuthenticated: false,
@@ -146,7 +149,12 @@ export const useAuthStore = create<AuthStore>()(
           set({ providerAuthStep: previousStep, authFlow: 'provider', showAuthModal: true });
         }
       },
-    }),
+    }
+  
+  
+  
+  
+  ),
     {
       name: 'auth-storage',
       partialize: (state) => ({ 

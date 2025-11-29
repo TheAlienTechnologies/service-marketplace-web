@@ -61,29 +61,37 @@ export default function OrdersPage() {
         </h1>
 
         {/* Status Filter Tabs */}
-        <div className="flex gap-2 mb-8">
-          {(
-            [
-              "awaiting",
-              "in-progress",
-              "completed",
-              "declined",
-            ] as OrderStatus[]
-          ).map((status) => (
-            <button
-              key={status}
-              onClick={() => setSelectedStatus(status)}
-              className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                selectedStatus === status
-                  ? "bg-brand-50 dark:bg-brand-900/20 text-brand-900 dark:text-brand-500"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-              }`}
-            >
-              {status === "in-progress"
-                ? "In-progress"
-                : status.charAt(0).toUpperCase() + status.slice(1)}
-            </button>
-          ))}
+        <div className="mb-8">
+          <div className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-800 px-1 py-1">
+            {(
+              [
+                "awaiting",
+                "in-progress",
+                "completed",
+                "declined",
+              ] as OrderStatus[]
+            ).map((status) => {
+              const isActive = selectedStatus === status;
+              const label =
+                status === "in-progress"
+                  ? "In-progress"
+                  : status.charAt(0).toUpperCase() + status.slice(1);
+
+              return (
+                <button
+                  key={status}
+                  onClick={() => setSelectedStatus(status)}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-white dark:bg-gray-900 text-brand-800 dark:text-brand-400 shadow-sm"
+                      : "bg-transparent text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Orders List */}
