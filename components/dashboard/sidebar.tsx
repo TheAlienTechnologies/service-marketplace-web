@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -9,12 +10,13 @@ import {
   ShoppingBag,
   Scale,
   Settings,
-  User,
   HelpCircle,
   LogOut,
+  PanelLeftClose,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
+import { Logo } from "@/components/layout/logo";
 
 const sidebarItems = [
   {
@@ -70,25 +72,43 @@ const accountItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const { signOut, user } = useAuthStore();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col sticky top-0">
-      <div className="p-6">
-        <Link href="/" className="flex items-center space-x-2">
-          <div className="bg-green-600 p-1 rounded">
-            <div className="w-4 h-4 border-2 border-white rounded-full" />
-          </div>
-          <span className="text-xl font-bold text-green-600">Pavodah</span>
-        </Link>
+    <aside
+      className={cn(
+        "bg-white border-r border-gray-200 h-screen flex flex-col sticky top-0 transition-all duration-300",
+        isCollapsed ? "w-20" : "w-64"
+      )}
+    >
+      <div
+        className={cn(
+          "h-16 flex items-center border-b border-gray-100",
+          isCollapsed ? "justify-center" : "justify-between px-6"
+        )}
+      >
+        {!isCollapsed && <Logo withLink={true} />}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          {isCollapsed ? (
+            <Logo withLink={false} showText={false} />
+          ) : (
+            <PanelLeftClose className="w-5 h-5" />
+          )}
+        </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto py-4 px-4 space-y-8">
-        {sidebarItems.map((group, groupIndex) => (
-          <div key={groupIndex}>
-            <h3 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
-              {group.title}
-            </h3>
-            <div className="space-y-1">
+      <div className="flex-1 overflow-y-auto py-6 space-y-8">
+        {sidebarItems.map((group) => (
+          <div key={group.title}>
+            {!isCollapsed && (
+              <h3 className="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 transition-opacity duration-200">
+                {group.title}
+              </h3>
+            )}
+            <div className={cn("space-y-1", isCollapsed ? "px-2" : "px-4")}>
               {group.items.map((item) => {
                 const isActive = pathname === item.href;
                 return (
@@ -96,19 +116,23 @@ export function Sidebar() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
+                      "flex items-center rounded-lg text-sm font-medium transition-colors",
+                      isCollapsed
+                        ? "justify-center px-2 py-3"
+                        : "space-x-3 px-4 py-3",
                       isActive
                         ? "bg-green-50 text-green-600 border-r-2 border-green-600"
                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                     )}
+                    title={isCollapsed ? item.label : undefined}
                   >
                     <item.icon
                       className={cn(
-                        "w-5 h-5",
+                        "w-5 h-5 shrink-0",
                         isActive ? "text-green-600" : "text-gray-500"
                       )}
                     />
-                    <span>{item.label}</span>
+                    {!isCollapsed && <span>{item.label}</span>}
                   </Link>
                 );
               })}
@@ -117,37 +141,57 @@ export function Sidebar() {
         ))}
 
         <div>
-          <h3 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
-            ACCOUNT SETTINGS
-          </h3>
-          <div className="space-y-1">
+          {!isCollapsed && (
+            <h3 className="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+              ACCOUNT SETTINGS
+            </h3>
+          )}
+          <div className={cn("space-y-1", isCollapsed ? "px-2" : "px-4")}>
             {accountItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  "flex items-center rounded-lg text-sm font-medium transition-colors text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                  isCollapsed
+                    ? "justify-center px-2 py-3"
+                    : "space-x-3 px-4 py-3"
                 )}
+                title={isCollapsed ? item.label : undefined}
               >
-                <item.icon className="w-5 h-5 text-gray-500" />
-                <span>{item.label}</span>
+                <item.icon className="w-5 h-5 shrink-0 text-gray-500" />
+                {!isCollapsed && <span>{item.label}</span>}
               </Link>
             ))}
             <button
               onClick={signOut}
-              className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+              className={cn(
+                "w-full flex items-center rounded-lg text-sm font-medium transition-colors text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                isCollapsed ? "justify-center px-2 py-3" : "space-x-3 px-4 py-3"
+              )}
+              title={isCollapsed ? "Logout" : undefined}
             >
-              <LogOut className="w-5 h-5 text-gray-500" />
-              <span>Logout</span>
+              <LogOut className="w-5 h-5 shrink-0 text-gray-500" />
+              {!isCollapsed && <span>Logout</span>}
             </button>
           </div>
         </div>
       </div>
 
       {/* User Profile Snippet at bottom */}
-      <div className="p-4 border-t border-gray-200">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden">
+      <div
+        className={cn(
+          "border-t border-gray-200",
+          isCollapsed ? "p-4 flex justify-center" : "p-4"
+        )}
+      >
+        <div
+          className={cn(
+            "flex items-center",
+            isCollapsed ? "justify-center" : "space-x-3"
+          )}
+        >
+          <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0">
             {/* Placeholder for avatar */}
             <img
               src={user?.avatar || ""}
@@ -155,12 +199,14 @@ export function Sidebar() {
               className="w-full h-full object-cover"
             />
           </div>
-          <div>
-            <p className="text-sm font-medium text-gray-900">
-              {user?.firstName} {user?.lastName || "Admin"}
-            </p>
-            <p className="text-xs text-gray-500">Admin</p>
-          </div>
+          {!isCollapsed && (
+            <div className="overflow-hidden">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {user?.firstName} {user?.lastName || "Admin"}
+              </p>
+              <p className="text-xs text-gray-500 truncate">Admin</p>
+            </div>
+          )}
         </div>
       </div>
     </aside>
