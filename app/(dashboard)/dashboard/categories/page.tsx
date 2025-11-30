@@ -25,6 +25,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from "@/components/ui/sheet";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -459,6 +466,8 @@ export default function CategoriesPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [activeTab, setActiveTab] = useState("Categories");
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [isFeatured, setIsFeatured] = useState(false);
 
   // --- Table Configuration ---
 
@@ -568,7 +577,14 @@ export default function CategoriesPage() {
               Export data
             </Button>
           )}
-          <Button className="bg-green-700 hover:bg-green-800 text-white gap-2">
+          <Button
+            className="bg-green-700 hover:bg-green-800 text-white gap-2"
+            onClick={() => {
+              if (activeTab === "Categories") {
+                setIsAddCategoryOpen(true);
+              }
+            }}
+          >
             <Plus className="w-4 h-4" />
             {getAddButtonText()}
           </Button>
@@ -697,6 +713,114 @@ export default function CategoriesPage() {
           </Button>
         </div>
       </div>
+
+      <Sheet open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
+        <SheetContent className="sm:max-w-[500px] p-0">
+          <SheetHeader className="px-6 py-6 border-b border-gray-100">
+            <SheetTitle className="text-xl font-semibold">
+              Add New Category
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+            {/* Category Name */}
+            <div className="space-y-2">
+              <label
+                htmlFor="category-name"
+                className="text-sm font-medium text-gray-700"
+              >
+                Category name
+              </label>
+              <Input
+                id="category-name"
+                placeholder="e.g. electronics"
+                className="bg-white"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <label
+                htmlFor="description"
+                className="text-sm font-medium text-gray-700"
+              >
+                Description
+              </label>
+              <textarea
+                id="description"
+                placeholder="Enter a description..."
+                className="flex min-h-[120px] w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+
+            {/* Parent Category */}
+            <div className="space-y-2">
+              <label
+                htmlFor="parent-category"
+                className="text-sm font-medium text-gray-700"
+              >
+                Parent category(Optional)
+              </label>
+              <div className="relative">
+                <select
+                  id="parent-category"
+                  className="flex h-10 w-full appearance-none rounded-lg border border-input bg-transparent px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="" disabled selected>
+                    Select an option
+                  </option>
+                  <option value="1">Architecture</option>
+                  <option value="2">Beauty & Grooming</option>
+                </select>
+                <ChevronRight className="absolute right-3 top-3 h-4 w-4 rotate-90 text-gray-500 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Featured Toggle */}
+            <div className="flex items-center gap-3">
+              <label
+                htmlFor="featured-toggle"
+                className="text-sm font-medium text-gray-900"
+              >
+                Featured
+              </label>
+              <button
+                id="featured-toggle"
+                type="button"
+                role="switch"
+                aria-checked={isFeatured}
+                onClick={() => setIsFeatured(!isFeatured)}
+                className={cn(
+                  "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2",
+                  isFeatured ? "bg-green-600" : "bg-gray-200"
+                )}
+              >
+                <span
+                  className={cn(
+                    "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                    isFeatured ? "translate-x-5" : "translate-x-0"
+                  )}
+                />
+              </button>
+            </div>
+          </div>
+
+          <SheetFooter className="px-6 py-6 border-t border-gray-100 sm:justify-between w-full bg-white mt-auto">
+            <div className="flex gap-3 w-full">
+              <Button
+                variant="outline"
+                onClick={() => setIsAddCategoryOpen(false)}
+                className="flex-1 border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-900 h-11"
+              >
+                Cancel
+              </Button>
+              <Button className="flex-1 bg-green-800 hover:bg-green-900 text-white h-11">
+                Save
+              </Button>
+            </div>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
