@@ -1,0 +1,275 @@
+"use client";
+
+import { useState } from "react";
+import {
+  Search,
+  Filter,
+  MoreVertical,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import Image from "next/image";
+
+// Mock Data matching the image
+const users = [
+  {
+    id: 1,
+    name: "Olivia Rhye",
+    role: "Admin",
+    email: "alma.lawson@example.com",
+    status: "Active",
+    verification: "Verified",
+    date: "15 Mar, 2025",
+    avatar:
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+  },
+  {
+    id: 2,
+    name: "Phoenix Baker",
+    role: "Client",
+    email: "dolores.chambers@example.com",
+    status: "Active",
+    verification: "Verified",
+    date: "10 Aug, 2025",
+    avatar:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+  },
+  {
+    id: 3,
+    name: "Lana Steiner",
+    role: "Freelancer",
+    email: "kenzi.lawson@example.com",
+    status: "Suspended",
+    verification: "Failed",
+    date: "25 Oct, 2025",
+    avatar:
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+  },
+  {
+    id: 4,
+    name: "Demi Wilkinson",
+    role: "Freelancer",
+    email: "felicia.reid@example.com",
+    status: "Active",
+    verification: "Verified",
+    date: "30 Nov, 2025",
+    avatar:
+      "https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+  },
+  {
+    id: 5,
+    name: "Candice Wu",
+    role: "Freelancer",
+    email: "debbie.baker@example.com",
+    status: "Pending",
+    verification: "Pending",
+    date: "5 Apr, 2025",
+    avatar:
+      "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+  },
+  {
+    id: 6,
+    name: "Natali Craig",
+    role: "Client",
+    email: "deanna.curtis@example.com",
+    status: "Suspended",
+    verification: "Verified",
+    date: "12 Feb, 2025",
+    avatar:
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+  },
+  {
+    id: 7,
+    name: "Drew Cano",
+    role: "Admin",
+    email: "sara.cruz@example.com",
+    status: "Suspended",
+    verification: "Failed",
+    date: "22 Jun, 2025",
+    avatar:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+  },
+];
+
+export default function UsersPage() {
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Users</h1>
+        <p className="text-gray-500">
+          View and manage all clients, freelancers, and admins on the platform.
+        </p>
+      </div>
+
+      {/* Filters and Search */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Input placeholder="Search by name or email..." className="pl-10" />
+        </div>
+        <Button variant="outline" className="flex items-center gap-2">
+          <Filter className="w-4 h-4" />
+          Filters
+        </Button>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+        <table className="w-full text-sm text-left">
+          <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
+            <tr>
+              <th className="px-6 py-4 w-[250px]">Name</th>
+              <th className="px-6 py-4">Role</th>
+              <th className="px-6 py-4">Email</th>
+              <th className="px-6 py-4">Status ↓</th>
+              <th className="px-6 py-4">Verification</th>
+              <th className="px-6 py-4">Date of Joining</th>
+              <th className="px-6 py-4 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {users.map((user) => (
+              <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 relative">
+                      <Image
+                        src={user.avatar}
+                        alt={user.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <span className="font-medium text-gray-900">
+                      {user.name}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-gray-600">{user.role}</td>
+                <td className="px-6 py-4 text-gray-600">{user.email}</td>
+                <td className="px-6 py-4">
+                  <div
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
+                      user.status === "Active"
+                        ? "bg-green-50 text-green-700 border-green-200"
+                        : user.status === "Pending"
+                        ? "bg-orange-50 text-orange-700 border-orange-200"
+                        : "bg-gray-50 text-gray-700 border-gray-200"
+                    }`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                        user.status === "Active"
+                          ? "bg-green-500"
+                          : user.status === "Pending"
+                          ? "bg-orange-500"
+                          : "bg-gray-500"
+                      }`}
+                    ></span>
+                    {user.status}
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div
+                    className={`flex items-center gap-1.5 text-xs font-medium ${
+                      user.verification === "Verified"
+                        ? "text-green-700"
+                        : user.verification === "Pending"
+                        ? "text-orange-700"
+                        : "text-red-700"
+                    }`}
+                  >
+                    {user.verification}
+                    {user.verification === "Verified" && (
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    )}
+                    {user.verification === "Pending" && (
+                      <Clock className="w-3.5 h-3.5" />
+                    )}
+                    {user.verification === "Failed" && (
+                      <XCircle className="w-3.5 h-3.5" />
+                    )}
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-gray-600">{user.date}</td>
+                <td className="px-6 py-4 text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="w-4 h-4 text-gray-500" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>Edit Details</DropdownMenuItem>
+                      <DropdownMenuItem className="text-red-600">
+                        Delete User
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Previous
+          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="h-8 w-8 p-0 bg-green-50 text-green-600 border-0"
+            >
+              1
+            </Button>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              2
+            </Button>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              3
+            </Button>
+            <span className="text-gray-400 px-2">...</span>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              8
+            </Button>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              9
+            </Button>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              10
+            </Button>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            Next
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}

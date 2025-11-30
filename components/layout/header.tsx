@@ -166,6 +166,11 @@ export function Header() {
                   <DropdownMenuItem>
                     <span>My Profile</span>
                   </DropdownMenuItem>
+                  {user?.role === "ADMIN" && (
+                    <DropdownMenuItem onClick={() => router.push("/dashboard")}>
+                      <span>Dashboard</span>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => router.push("/orders")}>
                     <span>My Orders</span>
                   </DropdownMenuItem>
