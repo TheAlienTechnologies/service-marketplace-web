@@ -121,8 +121,8 @@ export function Sidebar() {
                         ? "justify-center px-2 py-3"
                         : "space-x-3 px-4 py-3",
                       isActive
-                        ? "bg-green-50 text-green-600 border-r-2 border-green-600"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        ? "bg-green-50 text-green-600 border-l-4 border-green-700 rounded-none"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg"
                     )}
                     title={isCollapsed ? item.label : undefined}
                   >
