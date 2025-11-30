@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Search,
-  ChevronDown,
-  Globe,
-  Bell,
-  Mail,
-  ShoppingBag,
-} from "lucide-react";
+import { ChevronDown, Globe, Bell, Mail, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -23,14 +16,8 @@ import { useRouter } from "next/navigation";
 
 export function Header() {
   const router = useRouter();
-  const {
-    isAuthenticated,
-    user,
-    showAuth,
-    signOut,
-    startUserFlow,
-    startProviderFlow,
-  } = useAuthStore();
+  const { isAuthenticated, user, showAuth, signOut, startUserFlow } =
+    useAuthStore();
 
   return (
     <header className="bg-white border-b border-gray-200">
@@ -163,23 +150,33 @@ export function Header() {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem>
-                    <span>My Profile</span>
-                  </DropdownMenuItem>
-                  {user?.role === "ADMIN" && (
-                    <DropdownMenuItem onClick={() => router.push("/dashboard")}>
-                      <span>Dashboard</span>
-                    </DropdownMenuItem>
+                  {user?.role === "ADMIN" ? (
+                    <>
+                      <DropdownMenuItem
+                        onClick={() => router.push("/dashboard")}
+                      >
+                        <span>Dashboard</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={signOut}>
+                        <span>Sign Out</span>
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
+                    <>
+                      <DropdownMenuItem>
+                        <span>My Profile</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => router.push("/orders")}>
+                        <span>My Orders</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <span>Settings</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={signOut}>
+                        <span>Sign Out</span>
+                      </DropdownMenuItem>
+                    </>
                   )}
-                  <DropdownMenuItem onClick={() => router.push("/orders")}>
-                    <span>My Orders</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <span>Settings</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={signOut}>
-                    <span>Sign Out</span>
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
