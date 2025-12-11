@@ -1,5 +1,13 @@
 "use client";
 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { use, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -93,6 +101,8 @@ export default function QuoteDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const [isDeclineModalOpen, setIsDeclineModalOpen] = useState(false);
+  const [declineReason, setDeclineReason] = useState("Too busy at the moment");
   // In a real app, fetch data based on ID.
   // For demo, we might simulate different statuses based on ID or just default.
   // Let's toggle status based on ID for demo purposes or random?
@@ -217,10 +227,8 @@ export default function QuoteDetailPage({
               </div>
             </div>
 
-            {/* Actions Section (Left Side) - Only if NOT New Request? 
-                Image 3 (Accepted) shows buttons here. Image 2 (New) shows form on right.
-            */}
-            {isAccepted && (
+            {/* Actions Section (Left Side) */}
+            {(isAccepted || isNewRequest) && (
               <div className="pt-4 flex items-center gap-3">
                 <Button className="bg-[#15803d] hover:bg-[#14532d] text-white font-medium min-w-[120px] rounded-lg">
                   Accept offer
@@ -228,6 +236,7 @@ export default function QuoteDetailPage({
                 <Button
                   variant="ghost"
                   className="text-red-500 hover:text-red-600 hover:bg-red-50 font-medium"
+                  onClick={() => setIsDeclineModalOpen(true)}
                 >
                   Decline
                 </Button>
@@ -240,13 +249,13 @@ export default function QuoteDetailPage({
                 </Button>
               </div>
             )}
-             {/* If Pending, maybe cancel option? */}
-             {status === "Pending" && (
+            {/* If Pending, maybe cancel option? */}
+            {status === "Pending" && (
               <div className="pt-4 flex items-center gap-3">
                 <Button className="bg-gray-900 hover:bg-gray-800 text-white font-medium min-w-[120px] rounded-lg">
                   Cancel Quote
                 </Button>
-                 <Button
+                <Button
                   variant="outline"
                   className="text-gray-700 border-gray-200 hover:bg-gray-50 gap-2 font-medium rounded-lg"
                 >
@@ -314,11 +323,13 @@ export default function QuoteDetailPage({
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 border-r border-gray-200 pr-2 h-full py-2">
                       {/* Flag placeholder */}
                       <div className="w-4 h-4 rounded-full bg-red-500 border border-gray-200 shrink-0 relative overflow-hidden">
-                         <div className="absolute top-0 left-0 w-full h-1/2 bg-red-600"></div>
-                         <div className="absolute bottom-0 left-0 w-full h-1/2 bg-yellow-400"></div>
-                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-green-600 star-shape"></div>
+                        <div className="absolute top-0 left-0 w-full h-1/2 bg-red-600"></div>
+                        <div className="absolute bottom-0 left-0 w-full h-1/2 bg-yellow-400"></div>
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-green-600 star-shape"></div>
                       </div>
-                      <span className="text-xs text-gray-600 font-medium">GHS</span>
+                      <span className="text-xs text-gray-600 font-medium">
+                        GHS
+                      </span>
                       <ChevronRight className="w-3 h-3 text-gray-400 rotate-90" />
                     </div>
                     <Input
@@ -361,7 +372,9 @@ export default function QuoteDetailPage({
           {isExpired && (
             <div className="bg-white border border-gray-200 rounded-xl p-6">
               <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <span className="w-4 h-4 rounded-full border border-gray-400 flex items-center justify-center text-[10px] font-serif text-gray-500">i</span>
+                <span className="w-4 h-4 rounded-full border border-gray-400 flex items-center justify-center text-[10px] font-serif text-gray-500">
+                  i
+                </span>
                 Important note
               </h3>
               <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
@@ -369,7 +382,7 @@ export default function QuoteDetailPage({
               </div>
             </div>
           )}
-          
+
           {/* Accepted State Right Panel - Image 3 shows EMPTY right panel, 
               but typically we might show the accepted offer details. 
               Leaving empty to match screenshot layout implies left column takes width or is just blank. 
@@ -377,7 +390,81 @@ export default function QuoteDetailPage({
           */}
         </div>
       </div>
+
+      <Dialog open={isDeclineModalOpen} onOpenChange={setIsDeclineModalOpen}>
+        <DialogContent className="sm:max-w-md bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-gray-900">
+              Please tell us why you&apos;re declining
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500">
+              (Optional, helps us improve and inform the client)
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-4">
+            {/* Radio Options */}
+            {[
+              "Too busy at the moment",
+              "Outside my service area",
+              "Budget too low",
+              "Doesn't match my expertise",
+              "Other",
+            ].map((reason) => (
+              <label
+                key={reason}
+                className="flex items-center gap-3 cursor-pointer group"
+              >
+                <div
+                  className={cn(
+                    "w-4 h-4 rounded-full border flex items-center justify-center transition-colors",
+                    declineReason === reason
+                      ? "border-green-600"
+                      : "border-gray-300 group-hover:border-gray-400"
+                  )}
+                >
+                  {declineReason === reason && (
+                    <div className="w-2 h-2 rounded-full bg-green-600" />
+                  )}
+                </div>
+                <input
+                  type="radio"
+                  className="hidden"
+                  name="decline-reason"
+                  value={reason}
+                  onChange={(e) => setDeclineReason(e.target.value)}
+                />
+                <span className="text-sm text-gray-700">{reason}</span>
+              </label>
+            ))}
+
+            {declineReason === "Other" && (
+              <div className="pt-2 pl-7">
+                <label className="text-xs font-medium text-gray-700 block mb-1.5">
+                  Message to client
+                </label>
+                <Textarea
+                  placeholder="Type your message here..."
+                  className="bg-white resize-none h-24"
+                />
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex gap-3 sm:justify-start">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setIsDeclineModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button className="flex-1 bg-[#15803d] hover:bg-[#14532d] text-white">
+              Submit & Decline
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-

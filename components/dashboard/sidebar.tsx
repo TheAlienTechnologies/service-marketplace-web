@@ -21,6 +21,15 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
 import { Logo } from "@/components/layout/logo";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 type SidebarItem = {
   icon: any;
@@ -129,7 +138,8 @@ export function Sidebar() {
   const pathname = usePathname();
   const { signOut, user } = useAuthStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<string[]>(["Messages"]); // Default expand Messages
+  const [expandedItems, setExpandedItems] = useState<string[]>(["Messages"]);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   const sidebarItems =
     user?.role === "ADMIN" ? adminSidebarItems : providerSidebarItems;
@@ -141,6 +151,11 @@ export function Sidebar() {
         ? prev.filter((item) => item !== label)
         : [...prev, label]
     );
+  };
+
+  const handleLogout = () => {
+    setShowLogoutDialog(false);
+    signOut();
   };
 
   return (
@@ -256,7 +271,7 @@ export function Sidebar() {
                                 {/* Curved Line for Tree Structure */}
                                 <div className="absolute -left-[17px] top-1/2 -mt-px w-4 h-px bg-gray-200"></div>
                                 <div className="absolute -left-[17px] top-0 bottom-1/2 w-px bg-gray-200 -mt-2"></div>
-                                
+
                                 {subItem.label}
                               </Link>
                             );
@@ -303,24 +318,35 @@ export function Sidebar() {
             </h3>
           )}
           <div className={cn("space-y-1", isCollapsed ? "px-2" : "px-4")}>
-            {accountItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center rounded-lg text-sm font-medium transition-colors text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-                  isCollapsed
-                    ? "justify-center px-2 py-3"
-                    : "space-x-3 px-4 py-3"
-                )}
-                title={isCollapsed ? item.label : undefined}
-              >
-                <item.icon className="w-5 h-5 shrink-0 text-gray-500" />
-                {!isCollapsed && <span>{item.label}</span>}
-              </Link>
-            ))}
+            {accountItems.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center rounded-lg text-sm font-medium transition-colors",
+                    isCollapsed
+                      ? "justify-center px-2 py-3"
+                      : "space-x-3 px-4 py-3",
+                    isActive
+                      ? "bg-green-50 text-green-600 border-l-4 border-green-700 rounded-none"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 rounded-lg"
+                  )}
+                  title={isCollapsed ? item.label : undefined}
+                >
+                  <item.icon
+                    className={cn(
+                      "w-5 h-5 shrink-0",
+                      isActive ? "text-green-600" : "text-gray-500"
+                    )}
+                  />
+                  {!isCollapsed && <span>{item.label}</span>}
+                </Link>
+              );
+            })}
             <button
-              onClick={signOut}
+              onClick={() => setShowLogoutDialog(true)}
               className={cn(
                 "w-full flex items-center rounded-lg text-sm font-medium transition-colors text-gray-600 hover:bg-gray-50 hover:text-gray-900",
                 isCollapsed ? "justify-center px-2 py-3" : "space-x-3 px-4 py-3"
@@ -364,6 +390,41 @@ export function Sidebar() {
           )}
         </div>
       </div>
+
+      {/* Logout Dialog */}
+      <Dialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <DialogContent className="sm:max-w-md bg-white">
+          <div className="flex flex-col items-center text-center p-4">
+            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
+              <LogOut className="w-6 h-6 text-red-600 ml-1" />
+            </div>
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold text-gray-900 text-center">
+                Are you sure you want to log out?
+              </DialogTitle>
+              <DialogDescription className="text-center text-gray-500 mt-2">
+                You&apos;ll be signed out from your account and will need to log
+                in again to continue.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <DialogFooter className="flex gap-3 sm:justify-center w-full px-4 pb-4">
+            <Button
+              variant="outline"
+              className="flex-1 border-gray-200"
+              onClick={() => setShowLogoutDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleLogout}
+            >
+              Log Out
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </aside>
   );
 }
