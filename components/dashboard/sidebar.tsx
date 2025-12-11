@@ -15,12 +15,29 @@ import {
   PanelLeftClose,
   MessageSquare,
   Star,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
 import { Logo } from "@/components/layout/logo";
 
-const adminSidebarItems = [
+type SidebarItem = {
+  icon: any;
+  label: string;
+  href: string;
+  subItems?: {
+    label: string;
+    href: string;
+  }[];
+};
+
+type SidebarGroup = {
+  title: string;
+  items: SidebarItem[];
+};
+
+const adminSidebarItems: SidebarGroup[] = [
   {
     title: "MAIN",
     items: [
@@ -58,7 +75,7 @@ const adminSidebarItems = [
   },
 ];
 
-const providerSidebarItems = [
+const providerSidebarItems: SidebarGroup[] = [
   {
     title: "MAIN",
     items: [
@@ -81,6 +98,10 @@ const providerSidebarItems = [
         icon: MessageSquare,
         label: "Messages",
         href: "/dashboard/messages",
+        subItems: [
+          { label: "Customer chat", href: "/dashboard/messages" },
+          { label: "Quote request", href: "/dashboard/quotes" },
+        ],
       },
       {
         icon: Star,
@@ -93,7 +114,7 @@ const providerSidebarItems = [
 
 const accountItems = [
   {
-    icon: Settings, // Using Settings icon for Profile & settings based on typical usage, though generic
+    icon: Settings,
     label: "Profile & settings",
     href: "/dashboard/profile",
   },
@@ -108,10 +129,19 @@ export function Sidebar() {
   const pathname = usePathname();
   const { signOut, user } = useAuthStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [expandedItems, setExpandedItems] = useState<string[]>(["Messages"]); // Default expand Messages
 
   const sidebarItems =
     user?.role === "ADMIN" ? adminSidebarItems : providerSidebarItems;
   const userRoleLabel = user?.role === "ADMIN" ? "Admin" : "Provider";
+
+  const toggleExpand = (label: string) => {
+    setExpandedItems((prev) =>
+      prev.includes(label)
+        ? prev.filter((item) => item !== label)
+        : [...prev, label]
+    );
+  };
 
   return (
     <aside
@@ -149,7 +179,94 @@ export function Sidebar() {
             )}
             <div className={cn("space-y-1", isCollapsed ? "px-2" : "px-4")}>
               {group.items.map((item) => {
-                const isActive = pathname === item.href;
+                const isExpanded = expandedItems.includes(item.label);
+                const hasSubItems = item.subItems && item.subItems.length > 0;
+                const isActive =
+                  pathname === item.href ||
+                  item.subItems?.some((sub) => pathname === sub.href);
+
+                // Main Item Content
+                const ItemContent = (
+                  <>
+                    <item.icon
+                      className={cn(
+                        "w-5 h-5 shrink-0",
+                        isActive ? "text-green-600" : "text-gray-500"
+                      )}
+                    />
+                    {!isCollapsed && (
+                      <span className="flex-1 text-left">{item.label}</span>
+                    )}
+                    {!isCollapsed && hasSubItems && (
+                      <span className="text-gray-400">
+                        {isExpanded ? (
+                          <ChevronUp className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        )}
+                      </span>
+                    )}
+                  </>
+                );
+
+                if (hasSubItems && !isCollapsed) {
+                  return (
+                    <div key={item.label}>
+                      <button
+                        onClick={() => toggleExpand(item.label)}
+                        className={cn(
+                          "w-full flex items-center rounded-lg text-sm font-medium transition-colors px-4 py-3 space-x-3",
+                          isActive
+                            ? "bg-green-50 text-green-600 border-l-4 border-green-700 rounded-l-none -ml-4 pl-7" // Compensate padding
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        )}
+                      >
+                        <item.icon
+                          className={cn(
+                            "w-5 h-5 shrink-0",
+                            isActive ? "text-green-600" : "text-gray-500"
+                          )}
+                        />
+                        <span className="flex-1 text-left">{item.label}</span>
+                        <span className="text-gray-400">
+                          {isExpanded ? (
+                            <ChevronUp className="w-4 h-4" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4" />
+                          )}
+                        </span>
+                      </button>
+
+                      {/* Nested Items with Tree Lines */}
+                      {isExpanded && (
+                        <div className="relative ml-6 pl-4 border-l border-gray-200 space-y-1 mt-1 pb-2">
+                          {item.subItems!.map((subItem) => {
+                            const isSubActive = pathname === subItem.href;
+                            return (
+                              <Link
+                                key={subItem.href}
+                                href={subItem.href}
+                                className={cn(
+                                  "relative flex items-center text-sm font-medium transition-colors py-2 pl-2 hover:text-gray-900 block",
+                                  isSubActive
+                                    ? "text-green-700 bg-green-50/50 rounded-md"
+                                    : "text-gray-500"
+                                )}
+                              >
+                                {/* Curved Line for Tree Structure */}
+                                <div className="absolute -left-[17px] top-1/2 -mt-px w-4 h-px bg-gray-200"></div>
+                                <div className="absolute -left-[17px] top-0 bottom-1/2 w-px bg-gray-200 -mt-2"></div>
+                                
+                                {subItem.label}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
                 return (
                   <Link
                     key={item.href}
@@ -217,7 +334,7 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* User Profile Snippet at bottom */}
+      {/* User Profile Snippet */}
       <div
         className={cn(
           "border-t border-gray-200",
@@ -231,7 +348,6 @@ export function Sidebar() {
           )}
         >
           <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0">
-            {/* Placeholder for avatar */}
             <img
               src={user?.avatar || ""}
               alt={user?.firstName || "User"}
