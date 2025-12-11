@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Star, Upload, Trash2, Check } from "lucide-react";
+import { Star, Upload, Trash2, Check, FileVideo } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const RATINGS = [
   { value: 1, label: "Very poor" },
@@ -21,7 +22,7 @@ export function ReviewForm({ orderId }: ReviewFormProps) {
   const [rating, setRating] = useState<number | null>(null);
   const [description, setDescription] = useState("");
   const [fileName, setFileName] = useState("Project recording.mp4");
-  const [fileSize] = useState("16 MB");
+  const [fileSize] = useState("10 MB");
   const [uploadProgress, setUploadProgress] = useState(40);
   const [hasFile, setHasFile] = useState(true);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -33,7 +34,7 @@ export function ReviewForm({ orderId }: ReviewFormProps) {
     if (!file) return;
     setFileName(file.name);
     setHasFile(true);
-    setUploadProgress(40);
+    setUploadProgress(40); // Mock progress start
   };
 
   const handleCancel = () => {
@@ -48,20 +49,20 @@ export function ReviewForm({ orderId }: ReviewFormProps) {
 
   if (isSubmitted) {
     return (
-      <div className="flex flex-col items-center justify-center pt-24 pb-32">
+      <div className="flex flex-col items-center justify-center pt-32 pb-40">
         <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-6">
-          <Check className="w-8 h-8 text-green-600" />
+          <Check className="w-8 h-8 text-green-600" strokeWidth={3} />
         </div>
-        <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2 text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2 text-center">
           Your feedback has been submitted!
         </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-300 mb-6 text-center">
+        <p className="text-sm text-gray-500 mb-8 text-center">
           Thanks for your feedback! Your review will help others.
         </p>
         <button
           type="button"
-          onClick={() => router.push("/orders")}
-          className="text-sm font-medium text-brand-700 dark:text-brand-400 hover:underline"
+          onClick={() => router.push("/dashboard/orders")}
+          className="text-sm font-bold text-green-700 hover:text-green-800 hover:underline border-b border-green-700 pb-0.5"
         >
           Back to Orders
         </button>
@@ -72,59 +73,56 @@ export function ReviewForm({ orderId }: ReviewFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-8 py-8"
+      className="w-full bg-white rounded-xl border border-gray-100 shadow-sm px-8 py-8"
     >
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-1">
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">
           Share your experience
         </h1>
-        <p className="text-sm text-gray-600 dark:text-gray-300">
+        <p className="text-sm text-gray-500">
           Your feedback helps others hire with confidence.
         </p>
       </div>
 
       {/* Rating */}
       <div className="mb-8">
-        <p className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-          Your rating
-        </p>
-        <div className="flex flex-nowrap items-center gap-6 rounded-full bg-gray-50 dark:bg-gray-800 px-6 py-3 border border-gray-200 dark:border-gray-700">
+        <p className="text-sm font-bold text-gray-900 mb-3">Your rating</p>
+        <div className="flex flex-wrap items-center gap-4">
           {RATINGS.map((option) => (
             <button
               key={option.value}
               type="button"
               onClick={() => setRating(option.value)}
-              className="inline-flex items-center gap-2 text-xs sm:text-sm text-gray-700 dark:text-gray-200"
+              className="group flex items-center gap-2 cursor-pointer"
             >
-              <span
-                className={`flex items-center justify-center w-4 h-4 rounded-full border ${
+              <div
+                className={cn(
+                  "w-4 h-4 rounded-full border flex items-center justify-center transition-colors",
                   rating === option.value
                     ? "border-green-600"
-                    : "border-gray-400"
-                }`}
+                    : "border-gray-300 group-hover:border-green-500"
+                )}
               >
                 {rating === option.value && (
-                  <span className="w-2 h-2 rounded-full bg-green-600" />
+                  <div className="w-2 h-2 rounded-full bg-green-600" />
                 )}
-              </span>
-              <span
-                className={
-                  rating === option.value
-                    ? "text-gray-900 dark:text-white"
-                    : "text-gray-600 dark:text-gray-300"
-                }
-              >
+              </div>
+              <span className="text-sm text-gray-700 font-medium ml-1">
                 {option.label}
               </span>
-              <span className="flex items-center gap-0.5">
-                {Array.from({ length: option.value }).map((_, index) => (
+              <div className="flex items-center gap-0.5 ml-1">
+                {Array.from({ length: 5 }).map((_, index) => (
                   <Star
                     key={index}
-                    className="w-3 h-3 text-yellow-400"
-                    fill="currentColor"
+                    className={cn(
+                      "w-3 h-3",
+                      index < option.value
+                        ? "text-amber-400 fill-amber-400"
+                        : "text-gray-200 fill-gray-200"
+                    )}
                   />
                 ))}
-              </span>
+              </div>
             </button>
           ))}
         </div>
@@ -133,21 +131,19 @@ export function ReviewForm({ orderId }: ReviewFormProps) {
       {/* Description */}
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-2">
-          <p className="text-sm font-medium text-gray-900 dark:text-white">
+          <p className="text-sm font-bold text-gray-900">
             Tell us more about your experience
           </p>
           <span className="text-xs text-gray-400">(optional)</span>
         </div>
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-900">
+        <div className="border border-gray-200 rounded-lg overflow-hidden bg-white focus-within:ring-1 focus-within:ring-green-500 focus-within:border-green-500 transition-all">
           <textarea
             value={description}
-            onChange={(e) =>
-              setDescription(e.target.value.slice(0, 500))
-            }
+            onChange={(e) => setDescription(e.target.value.slice(0, 500))}
             placeholder="Enter a description..."
-            className="w-full h-32 px-4 py-3 text-sm text-gray-900 dark:text-white bg-transparent outline-none resize-none"
+            className="w-full h-32 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none resize-none"
           />
-          <div className="flex justify-end px-4 py-2 text-xs text-gray-400">
+          <div className="flex justify-end px-4 py-2 text-xs text-gray-400 bg-gray-50/50 border-t border-gray-100">
             {500 - remainingChars}/500
           </div>
         </div>
@@ -156,74 +152,81 @@ export function ReviewForm({ orderId }: ReviewFormProps) {
       {/* Upload section */}
       <div className="mb-10">
         <div className="flex items-center gap-2 mb-2">
-          <p className="text-sm font-medium text-gray-900 dark:text-white">
+          <p className="text-sm font-bold text-gray-900">
             Share photos of the work
           </p>
           <span className="text-xs text-gray-400">(optional)</span>
         </div>
 
-        <label className="block border border-dashed border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 px-6 py-8 text-center cursor-pointer hover:border-gray-400">
-          <input
-            type="file"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-          <div className="flex flex-col items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
-            <Upload className="w-5 h-5 text-gray-500 mb-1" />
-            <span className="font-medium text-brand-700 dark:text-brand-400">
+        {!hasFile && (
+          <label className="flex flex-col items-center justify-center border border-dashed border-gray-200 rounded-lg bg-white px-6 py-10 text-center cursor-pointer hover:bg-gray-50 transition-colors">
+            <input
+              type="file"
+              className="hidden"
+              onChange={handleFileChange}
+              accept="image/*,video/*"
+            />
+            <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mb-3 text-gray-400">
+              <Upload className="w-5 h-5" />
+            </div>
+            <p className="text-sm text-green-700 font-semibold mb-1">
               Click to upload or drag and drop
-            </span>
-            <span>SVG, PNG, JPG or GIF (max. 800×400px)</span>
-          </div>
-        </label>
+            </p>
+            <p className="text-xs text-gray-400">
+              SVG, PNG, JPG or GIF (max. 800×400px)
+            </p>
+          </label>
+        )}
 
         {hasFile && (
-          <div className="mt-4 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-3 bg-white dark:bg-gray-900">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-100">
-                <div className="w-6 h-6 rounded bg-green-600 flex items-center justify-center text-white text-xs font-semibold">
-                  E
+          <div className="border border-gray-200 rounded-lg px-4 py-4 bg-white">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded bg-green-50 flex items-center justify-center text-green-600">
+                  <FileVideo className="w-4 h-4" />
                 </div>
                 <div>
-                  <p className="font-medium">{fileName}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {fileSize}
+                  <p className="text-sm font-medium text-gray-900">
+                    {fileName}
                   </p>
+                  <p className="text-xs text-gray-500">{fileSize}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setHasFile(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
-            <div className="w-full h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mb-1">
-              <div
-                className="h-full bg-green-600 rounded-full"
-                style={{ width: `${uploadProgress}%` }}
-              />
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#15803d] rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              <span className="text-xs text-gray-500 font-medium">
+                {uploadProgress}%
+              </span>
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 text-right">
-              {uploadProgress}%
-            </p>
           </div>
         )}
       </div>
 
       {/* Actions */}
-      <div className="flex flex-col sm:flex-row sm:justify-end gap-3">
+      <div className="flex flex-col sm:flex-row sm:justify-between gap-4 pt-4 border-t border-gray-100">
         <button
           type="button"
           onClick={handleCancel}
-          className="flex-1 sm:flex-none sm:w-40 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          className="flex-1 sm:flex-none sm:w-32 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
         >
           Cancel
         </button>
         <button
           type="submit"
-          className="flex-1 sm:flex-none sm:w-44 px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-brand-900 hover:bg-brand-700 transition-colors"
+          className="flex-1 sm:flex-none sm:w-48 px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-[#15803d] hover:bg-[#14532d] transition-colors shadow-sm"
         >
           Submit review
         </button>
@@ -231,5 +234,3 @@ export function ReviewForm({ orderId }: ReviewFormProps) {
     </form>
   );
 }
-
-

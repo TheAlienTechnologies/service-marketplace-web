@@ -163,7 +163,8 @@ export function HomeHeader() {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  {user?.role === "ADMIN" ? (
+                  {user?.role === "ADMIN" ||
+                  user?.role === "SERVICE_PROVIDER" ? (
                     <>
                       <DropdownMenuItem
                         onClick={() => router.push("/dashboard")}

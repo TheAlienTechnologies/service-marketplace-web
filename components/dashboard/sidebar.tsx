@@ -13,12 +13,14 @@ import {
   HelpCircle,
   LogOut,
   PanelLeftClose,
+  MessageSquare,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
 import { Logo } from "@/components/layout/logo";
 
-const sidebarItems = [
+const adminSidebarItems = [
   {
     title: "MAIN",
     items: [
@@ -56,6 +58,39 @@ const sidebarItems = [
   },
 ];
 
+const providerSidebarItems = [
+  {
+    title: "MAIN",
+    items: [
+      {
+        icon: LayoutDashboard,
+        label: "Dashboard",
+        href: "/dashboard",
+      },
+      {
+        icon: Box,
+        label: "My services",
+        href: "/dashboard/services",
+      },
+      {
+        icon: ShoppingBag,
+        label: "Orders",
+        href: "/dashboard/orders",
+      },
+      {
+        icon: MessageSquare,
+        label: "Messages",
+        href: "/dashboard/messages",
+      },
+      {
+        icon: Star,
+        label: "Reviews",
+        href: "/dashboard/reviews",
+      },
+    ],
+  },
+];
+
 const accountItems = [
   {
     icon: Settings, // Using Settings icon for Profile & settings based on typical usage, though generic
@@ -73,6 +108,10 @@ export function Sidebar() {
   const pathname = usePathname();
   const { signOut, user } = useAuthStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const sidebarItems =
+    user?.role === "ADMIN" ? adminSidebarItems : providerSidebarItems;
+  const userRoleLabel = user?.role === "ADMIN" ? "Admin" : "Provider";
 
   return (
     <aside
@@ -195,16 +234,16 @@ export function Sidebar() {
             {/* Placeholder for avatar */}
             <img
               src={user?.avatar || ""}
-              alt="Admin"
+              alt={user?.firstName || "User"}
               className="w-full h-full object-cover"
             />
           </div>
           {!isCollapsed && (
             <div className="overflow-hidden">
               <p className="text-sm font-medium text-gray-900 truncate">
-                {user?.firstName} {user?.lastName || "Admin"}
+                {user?.firstName} {user?.lastName}
               </p>
-              <p className="text-xs text-gray-500 truncate">Admin</p>
+              <p className="text-xs text-gray-500 truncate">{userRoleLabel}</p>
             </div>
           )}
         </div>

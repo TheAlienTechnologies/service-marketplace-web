@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import Link from "next/link";
+import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   useReactTable,
   getCoreRowModel,
@@ -20,6 +22,8 @@ import {
   ChevronRight,
   Download,
   ArrowDown,
+  Mail,
+  ArrowRight,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -31,8 +35,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { useAuthStore } from "@/store/auth-store";
 
-// --- Types ---
+// --- Admin Types ---
 
 type Transaction = {
   id: string;
@@ -72,7 +77,7 @@ type Order = {
   orderStatus: "Completed" | "In progress" | "Awaiting" | "Declined";
 };
 
-// --- Mock Data ---
+// --- Admin Mock Data ---
 
 const transactions: Transaction[] = [
   {
@@ -349,13 +354,11 @@ const orders: Order[] = [
   },
 ];
 
-// --- Column Helpers ---
+// --- Admin Column Helpers & Defs ---
 
 const transactionColumnHelper = createColumnHelper<Transaction>();
 const cashoutRequestColumnHelper = createColumnHelper<CashoutRequest>();
 const orderColumnHelper = createColumnHelper<Order>();
-
-// --- Column Definitions ---
 
 const transactionColumns = [
   transactionColumnHelper.accessor("id", {
@@ -609,7 +612,6 @@ const orderColumns = [
         badgeStyles = "bg-orange-50 text-orange-700 border-orange-200";
         dotStyles = "bg-orange-500";
       } else if (status === "Refunded") {
-        // Using a light blue/indigo style for Refunded as seen in image
         badgeStyles = "bg-blue-50 text-blue-700 border-blue-200";
         dotStyles = "bg-blue-500";
       } else if (status === "Failed") {
@@ -694,14 +696,104 @@ const orderColumns = [
   }),
 ];
 
-// --- Main Component ---
+// --- Provider Types & Mock Data ---
 
-const tabs = ["Orders", "Transactions", "Cashout Request"];
+type ProviderOrder = {
+  id: string;
+  client: {
+    name: string;
+    avatar: string;
+  };
+  date: string;
+  category: string;
+  status: "Awaiting" | "In-progress" | "Completed" | "Declined";
+  progress: number; // 1 to 4
+};
 
-export default function OrdersPage() {
+const providerOrders: ProviderOrder[] = [
+  {
+    id: "5764892",
+    client: {
+      name: "Joel Smith",
+      avatar:
+        "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+    },
+    date: "August 29, 2025",
+    category: "Architecture & Interior Design",
+    status: "Awaiting",
+    progress: 1, // 1=Awaiting
+  },
+  {
+    id: "5764893",
+    client: {
+      name: "Sarah Johnson",
+      avatar:
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+    },
+    date: "August 29, 2025",
+    category: "Architecture & Interior Design",
+    status: "In-progress",
+    progress: 2,
+  },
+  {
+    id: "5764894",
+    client: {
+      name: "Michael Brown",
+      avatar:
+        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+    },
+    date: "August 29, 2025",
+    category: "Architecture & Interior Design",
+    status: "In-progress",
+    progress: 2,
+  },
+  {
+    id: "5764895",
+    client: {
+      name: "Emily Davis",
+      avatar:
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+    },
+    date: "August 29, 2025",
+    category: "Architecture & Interior Design",
+    status: "In-progress",
+    progress: 2,
+  },
+  {
+    id: "5764896",
+    client: {
+      name: "Robert Sam",
+      avatar:
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+    },
+    date: "August 29, 2025",
+    category: "Architecture & Interior Design",
+    status: "Completed",
+    progress: 3,
+  },
+  {
+    id: "5764899",
+    client: {
+      name: "David Wilson",
+      avatar:
+        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+    },
+    date: "August 28, 2025",
+    category: "Architecture & Interior Design",
+    status: "Declined",
+    progress: 0,
+  },
+];
+
+const progressSteps = ["Order placed", "Awaiting", "In-progress", "Completed"];
+
+// --- Admin Orders Component ---
+
+function AdminOrders() {
+  const tabs = ["Orders", "Transactions", "Cashout Request"];
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [activeTab, setActiveTab] = useState("Orders"); // Default to Orders as per latest request
+  const [activeTab, setActiveTab] = useState("Orders");
 
   const currentData = useMemo(() => {
     if (activeTab === "Cashout Request") {
@@ -713,7 +805,7 @@ export default function OrdersPage() {
     if (activeTab === "Orders") {
       return orders;
     }
-    return orders; // Default
+    return orders;
   }, [activeTab]);
 
   const currentColumns = useMemo(() => {
@@ -771,7 +863,7 @@ export default function OrdersPage() {
               key={tab}
               onClick={() => {
                 setActiveTab(tab);
-                setGlobalFilter(""); // Reset search when switching tabs
+                setGlobalFilter("");
               }}
               className={cn(
                 "px-4 py-1.5 text-sm font-medium rounded-md transition-all",
@@ -953,4 +1045,230 @@ export default function OrdersPage() {
       </div>
     </div>
   );
+}
+
+// --- Provider Orders Component ---
+
+function ProviderOrders() {
+  const searchParams = useSearchParams();
+  const tabs = ["Awaiting", "In-progress", "Completed", "Declined"];
+  
+  const initialTab = searchParams.get("tab");
+  const defaultTab = tabs.includes(initialTab || "") ? initialTab! : "Awaiting";
+
+  const [activeTab, setActiveTab] = useState(defaultTab);
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab && tabs.includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  const filteredOrders = providerOrders.filter(
+    (order) => order.status === activeTab
+  );
+
+  const getStatusStyles = (status: string) => {
+    switch (status) {
+      case "Awaiting":
+        return { dot: "bg-amber-500", badge: "bg-amber-50 text-amber-700" };
+      case "In-progress":
+        return { dot: "bg-blue-500", badge: "bg-blue-50 text-blue-700" };
+      case "Completed":
+        return { dot: "bg-green-500", badge: "bg-green-50 text-green-700" };
+      case "Declined":
+        return { dot: "bg-red-500", badge: "bg-red-50 text-red-700" };
+      default:
+        return { dot: "bg-gray-500", badge: "bg-gray-50 text-gray-700" };
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">My Orders</h1>
+        <p className="text-gray-500 mt-1">
+          Stay on top of your orders to deliver great results.
+        </p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-2">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={cn(
+              "px-4 py-1.5 text-sm font-bold rounded-full transition-all",
+              activeTab === tab
+                ? "bg-green-50 text-green-700"
+                : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+            )}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {/* Orders List */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-100">
+        {filteredOrders.map((order) => {
+          const statusStyles = getStatusStyles(order.status);
+          return (
+            <div key={order.id} className="p-6 space-y-6">
+              {/* Row 1: User Info & Date */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 relative">
+                    <Image
+                      src={order.client.avatar}
+                      alt={order.client.name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <span className="font-bold text-gray-900">
+                    {order.client.name}
+                  </span>
+                </div>
+                <span className="text-sm text-gray-500">{order.date}</span>
+              </div>
+
+              {/* Row 2: Details & Actions */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                {/* Left: Details */}
+                <div className="flex flex-wrap items-center gap-3 text-sm">
+                  <span className="font-bold text-gray-900">
+                    Order ID: #{order.id}
+                  </span>
+                  <span className="text-gray-300">|</span>
+                  <span className="text-gray-500">{order.category}</span>
+                  <div className="flex items-center gap-1.5 ml-2">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${statusStyles.dot}`}
+                    ></span>
+                    <span
+                      className={`font-bold px-2 py-0.5 rounded-full text-xs ${statusStyles.badge}`}
+                    >
+                      {order.status}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right: Actions */}
+                <div className="flex items-center gap-3">
+                  {order.status === "Awaiting" && (
+                    <Button className="bg-[#15803d] hover:bg-[#14532d] text-white font-medium min-w-[120px] rounded-lg">
+                      Accept Order
+                    </Button>
+                  )}
+                  {order.status === "In-progress" && (
+                    <Button className="bg-[#15803d] hover:bg-[#14532d] text-white font-medium min-w-[150px] rounded-lg">
+                      Mark as completed
+                    </Button>
+                  )}
+                  {order.status === "Completed" && (
+                    <Link href={`/orders/${order.id}/review`}>
+                      <Button className="bg-[#15803d] hover:bg-[#14532d] text-white font-medium min-w-[150px] rounded-lg">
+                        Leave a review
+                      </Button>
+                    </Link>
+                  )}
+
+                  {(order.status === "Awaiting" ||
+                    order.status === "In-progress") && (
+                    <Button
+                      variant="ghost"
+                      className="text-red-500 hover:text-red-600 hover:bg-red-50 font-medium"
+                    >
+                      Decline Order
+                    </Button>
+                  )}
+
+                  {order.status === "Completed" && (
+                    <Button
+                      variant="ghost"
+                      className="text-gray-700 hover:text-gray-900 hover:bg-gray-100 font-medium"
+                    >
+                      Raise dispute
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    className="text-gray-700 border-gray-200 hover:bg-gray-50 gap-2 font-medium rounded-lg"
+                  >
+                    <Mail className="w-4 h-4" />
+                    Message Client
+                  </Button>
+                </div>
+              </div>
+
+              {/* Row 3: Order Details Link */}
+              <div>
+                <Link
+                  href={`/dashboard/orders/${order.id}`}
+                  className="flex items-center text-green-600 text-sm font-medium hover:underline gap-1"
+                >
+                  Order details <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+
+              {/* Row 4: Progress Bar */}
+              {order.status === "Declined" ? (
+                <div className="max-w-md pt-2">
+                  <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 px-3 py-2 rounded-lg w-fit border border-red-100">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                    This order was declined
+                  </div>
+                </div>
+              ) : (
+                <div className="max-w-md pt-2">
+                  <div className="relative h-1.5 bg-gray-100 rounded-full mb-2">
+                    <div
+                      className="absolute h-full bg-green-500 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${
+                          (order.progress / (progressSteps.length - 1)) * 100
+                        }%`,
+                      }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-400">
+                    {progressSteps.map((step, index) => (
+                      <span
+                        key={step}
+                        className={cn(
+                          index <= order.progress ? "text-green-600" : ""
+                        )}
+                      >
+                        {step}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {filteredOrders.length === 0 && (
+          <div className="p-12 text-center text-gray-500">
+            No orders found in this category.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function OrdersPage() {
+  const { user } = useAuthStore();
+
+  if (user?.role === "ADMIN") {
+    return <AdminOrders />;
+  }
+
+  return <ProviderOrders />;
 }

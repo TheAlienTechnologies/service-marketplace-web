@@ -15,12 +15,18 @@ export default function DashboardLayout({
   const { user, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== "ADMIN") {
+    if (
+      !isAuthenticated ||
+      (user?.role !== "ADMIN" && user?.role !== "SERVICE_PROVIDER")
+    ) {
       router.push("/");
     }
   }, [isAuthenticated, user, router]);
 
-  if (!isAuthenticated || user?.role !== "ADMIN") {
+  if (
+    !isAuthenticated ||
+    (user?.role !== "ADMIN" && user?.role !== "SERVICE_PROVIDER")
+  ) {
     return null;
   }
 
