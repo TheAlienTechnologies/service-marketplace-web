@@ -197,8 +197,11 @@ export function Sidebar() {
                 const isExpanded = expandedItems.includes(item.label);
                 const hasSubItems = item.subItems && item.subItems.length > 0;
                 const isActive =
-                  pathname === item.href ||
-                  item.subItems?.some((sub) => pathname === sub.href);
+                  item.href === "/dashboard"
+                    ? pathname === "/dashboard"
+                    : pathname === item.href ||
+                      pathname.startsWith(`${item.href}/`) ||
+                      item.subItems?.some((sub) => pathname === sub.href);
 
                 // Main Item Content
                 const ItemContent = (

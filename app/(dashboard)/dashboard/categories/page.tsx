@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   useReactTable,
   getCoreRowModel,
@@ -463,6 +464,7 @@ const serviceColumns = [
 const tabs = ["All Services", "Categories", "Featured"];
 
 export default function CategoriesPage() {
+  const router = useRouter();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [activeTab, setActiveTab] = useState("Categories");
@@ -582,6 +584,8 @@ export default function CategoriesPage() {
             onClick={() => {
               if (activeTab === "Categories") {
                 setIsAddCategoryOpen(true);
+              } else if (activeTab === "All Services") {
+                router.push("/dashboard/services/new");
               }
             }}
           >

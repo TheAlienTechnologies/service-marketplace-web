@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -10,8 +10,8 @@ import {
   flexRender,
   createColumnHelper,
   SortingState,
-  ColumnDef,
 } from "@tanstack/react-table";
+import Link from "next/link";
 import {
   Search,
   Filter,
@@ -284,7 +284,7 @@ const columns = [
   columnHelper.display({
     id: "actions",
     header: "Action",
-    cell: () => (
+    cell: (info) => (
       <div className="text-right">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -293,7 +293,11 @@ const columns = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>View Details</DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`/dashboard/disputes/${info.row.original.id}`}>
+                View Details
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem>Resolve Dispute</DropdownMenuItem>
             <DropdownMenuItem>Contact Parties</DropdownMenuItem>
           </DropdownMenuContent>
