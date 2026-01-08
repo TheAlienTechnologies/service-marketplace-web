@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   useReactTable,
@@ -22,6 +22,8 @@ import {
   ChevronRight,
   Download,
   Star,
+  Upload,
+  Loader2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -33,6 +35,14 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -40,15 +50,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { apiService } from "@/lib/api";
+import { Category } from "@/types/auth";
+import { toast } from "react-toastify";
+import { useCategoriesStore } from "@/store/categories-store";
 
 // --- Types ---
 
-type Category = {
-  id: number;
+type CategoryTableRow = {
+  id: string;
   name: string;
   subCategories: number;
   activeListings: number;
   isFeatured: boolean;
+  imageUrl?: string;
   displayOrder?: string;
   createdAt: string;
 };
@@ -67,108 +82,8 @@ type Service = {
   joinedAt: string;
 };
 
-// --- Mock Data ---
-
-const categories: Category[] = [
-  {
-    id: 1,
-    name: "Architecture",
-    subCategories: 5,
-    activeListings: 125,
-    isFeatured: true,
-    createdAt: "15 Mar, 2025",
-  },
-  {
-    id: 2,
-    name: "Beauty & Grooming",
-    subCategories: 10,
-    activeListings: 45,
-    isFeatured: false,
-    createdAt: "10 Aug, 2025",
-  },
-  {
-    id: 3,
-    name: "IT & Tech",
-    subCategories: 9,
-    activeListings: 23,
-    isFeatured: true,
-    createdAt: "25 Oct, 2025",
-  },
-  {
-    id: 4,
-    name: "Finance & Accounting",
-    subCategories: 3,
-    activeListings: 206,
-    isFeatured: true,
-    createdAt: "30 Nov, 2025",
-  },
-  {
-    id: 5,
-    name: "Marketing & Advertising",
-    subCategories: 4,
-    activeListings: 190,
-    isFeatured: true,
-    createdAt: "5 Apr, 2025",
-  },
-  {
-    id: 6,
-    name: "Travel & Leisure",
-    subCategories: 2,
-    activeListings: 25,
-    isFeatured: false,
-    createdAt: "12 Feb, 2025",
-  },
-];
-
-const featuredItems: Category[] = [
-  {
-    id: 1,
-    name: "Architecture",
-    subCategories: 5,
-    activeListings: 125,
-    displayOrder: "#1",
-    isFeatured: true,
-    createdAt: "15 Mar, 2025",
-  },
-  {
-    id: 2,
-    name: "Beauty & Grooming",
-    subCategories: 10,
-    activeListings: 45,
-    displayOrder: "#2",
-    isFeatured: true,
-    createdAt: "10 Aug, 2025",
-  },
-  {
-    id: 3,
-    name: "IT & Tech",
-    subCategories: 9,
-    activeListings: 23,
-    displayOrder: "#3",
-    isFeatured: true,
-    createdAt: "25 Oct, 2025",
-  },
-  {
-    id: 4,
-    name: "Finance & Accounting",
-    subCategories: 3,
-    activeListings: 206,
-    displayOrder: "#4",
-    isFeatured: true,
-    createdAt: "30 Nov, 2025",
-  },
-  {
-    id: 5,
-    name: "Marketing & Advertising",
-    subCategories: 4,
-    activeListings: 190,
-    displayOrder: "#5",
-    isFeatured: true,
-    createdAt: "5 Apr, 2025",
-  },
-];
-
-const services: Service[] = [
+// Mock services data (services remain mock for now)
+const mockServices: Service[] = [
   {
     id: 1,
     title: "Plumbing Installation & Repai...",
@@ -197,267 +112,12 @@ const services: Service[] = [
     rating: 4.8,
     joinedAt: "10 Aug, 2025",
   },
-  {
-    id: 3,
-    title: "Professional Logo Design & Brand...",
-    category: "Graphic Design",
-    provider: {
-      name: "Lana Steiner",
-      avatar:
-        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    },
-    orders: 5,
-    status: "Suspended",
-    rating: 4.8,
-    joinedAt: "25 Oct, 2025",
-  },
-  {
-    id: 4,
-    title: "Website Design & Landing Page D...",
-    category: "Web Development",
-    provider: {
-      name: "Demi Wilkinson",
-      avatar:
-        "https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    },
-    orders: 2,
-    status: "Active",
-    rating: 4.8,
-    joinedAt: "30 Nov, 2025",
-  },
-  {
-    id: 5,
-    title: "Home Cleaning & Deep Sanitizati...",
-    category: "Cleaning Services",
-    provider: {
-      name: "Candice Wu",
-      avatar:
-        "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    },
-    orders: 6,
-    status: "Pending",
-    rating: 4.8,
-    joinedAt: "5 Apr, 2025",
-  },
-  {
-    id: 6,
-    title: "Furniture Assembly & Carpentry...",
-    category: "Carpentry",
-    provider: {
-      name: "Natali Craig",
-      avatar:
-        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    },
-    orders: 4,
-    status: "Suspended",
-    rating: 4.8,
-    joinedAt: "12 Feb, 2025",
-  },
-  {
-    id: 7,
-    title: "Landscape Design & Garden Layo...",
-    category: "Landscaping",
-    provider: {
-      name: "Drew Cano",
-      avatar:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    },
-    orders: 8,
-    status: "Suspended",
-    rating: 4.8,
-    joinedAt: "22 Jun, 2025",
-  },
 ];
 
 // --- Column Helpers ---
 
-const categoryColumnHelper = createColumnHelper<Category>();
+const categoryColumnHelper = createColumnHelper<CategoryTableRow>();
 const serviceColumnHelper = createColumnHelper<Service>();
-
-// --- Column Definitions ---
-
-const categoryColumns = [
-  categoryColumnHelper.accessor("name", {
-    header: "Category",
-    cell: (info) => (
-      <span className="font-medium text-gray-900">{info.getValue()}</span>
-    ),
-  }),
-  categoryColumnHelper.accessor("subCategories", {
-    header: "Sub-categories",
-    cell: (info) => <span className="text-gray-600">{info.getValue()}</span>,
-  }),
-  categoryColumnHelper.accessor("activeListings", {
-    header: "Active listings",
-    cell: (info) => <span className="text-gray-600">{info.getValue()}</span>,
-  }),
-  categoryColumnHelper.accessor("isFeatured", {
-    header: "Featured",
-    cell: (info) => {
-      const isFeatured = info.getValue();
-      return (
-        <div className="flex items-center">
-          {isFeatured ? (
-            <div className="flex items-center justify-center w-5 h-5 bg-green-700 rounded text-white">
-              <Check className="w-3.5 h-3.5 stroke-[3]" />
-            </div>
-          ) : (
-            <span className="text-gray-400 font-medium text-lg ml-1">—</span>
-          )}
-        </div>
-      );
-    },
-  }),
-  categoryColumnHelper.accessor("createdAt", {
-    header: "Date of created",
-    cell: (info) => <span className="text-gray-600">{info.getValue()}</span>,
-  }),
-  categoryColumnHelper.display({
-    id: "actions",
-    header: "Action",
-    cell: () => (
-      <div className="text-right">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreVertical className="w-4 h-4 text-gray-500" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>Edit Category</DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600">
-              Delete Category
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    ),
-    meta: { align: "right" },
-  }),
-];
-
-const featuredColumns = [
-  categoryColumnHelper.accessor("name", {
-    header: "Category",
-    cell: (info) => (
-      <span className="font-medium text-gray-900">{info.getValue()}</span>
-    ),
-  }),
-  categoryColumnHelper.accessor("subCategories", {
-    header: "Sub-categories",
-    cell: (info) => <span className="text-gray-600">{info.getValue()}</span>,
-  }),
-  categoryColumnHelper.accessor("activeListings", {
-    header: "Active listings",
-    cell: (info) => <span className="text-gray-600">{info.getValue()}</span>,
-  }),
-  categoryColumnHelper.accessor("displayOrder", {
-    header: "Display",
-    cell: (info) => <span className="text-gray-600">{info.getValue()}</span>,
-  }),
-  categoryColumnHelper.accessor("createdAt", {
-    header: "Date of created",
-    cell: (info) => <span className="text-gray-600">{info.getValue()}</span>,
-  }),
-  categoryColumnHelper.display({
-    id: "actions",
-    header: "Action",
-    cell: () => (
-      <div className="text-right">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreVertical className="w-4 h-4 text-gray-500" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>Remove from Featured</DropdownMenuItem>
-            <DropdownMenuItem>Edit Order</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    ),
-    meta: { align: "right" },
-  }),
-];
-
-const serviceColumns = [
-  serviceColumnHelper.accessor("title", {
-    header: "Service Title",
-    cell: (info) => (
-      <span className="font-medium text-gray-900">{info.getValue()}</span>
-    ),
-    size: 250,
-  }),
-  serviceColumnHelper.accessor("category", {
-    header: "Category",
-    cell: (info) => (
-      <span className="font-medium text-gray-900">{info.getValue()}</span>
-    ),
-  }),
-  serviceColumnHelper.accessor("provider", {
-    header: "Provider",
-    cell: (info) => (
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 relative">
-          <Image
-            src={info.row.original.provider.avatar}
-            alt={info.row.original.provider.name}
-            fill
-            className="object-cover"
-          />
-        </div>
-        <span className="font-medium text-gray-900">
-          {info.row.original.provider.name}
-        </span>
-      </div>
-    ),
-  }),
-  serviceColumnHelper.accessor("orders", {
-    header: "Orders",
-    cell: (info) => <span className="text-gray-600">{info.getValue()}</span>,
-  }),
-  serviceColumnHelper.accessor("status", {
-    header: "Status",
-    cell: (info) => {
-      const status = info.getValue();
-      let badgeStyles = "bg-gray-50 text-gray-700";
-      let dotStyles = "bg-gray-500";
-
-      if (status === "Active") {
-        badgeStyles = "bg-green-50 text-green-700";
-        dotStyles = "bg-green-500";
-      } else if (status === "Pending") {
-        badgeStyles = "bg-orange-50 text-orange-700";
-        dotStyles = "bg-orange-500";
-      }
-
-      return (
-        <div
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeStyles}`}
-        >
-          <span
-            className={`w-1.5 h-1.5 rounded-full mr-1.5 ${dotStyles}`}
-          ></span>
-          {status}
-        </div>
-      );
-    },
-  }),
-  serviceColumnHelper.accessor("rating", {
-    header: "Rating",
-    cell: (info) => (
-      <div className="flex items-center gap-1 text-gray-600">
-        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-        <span>{info.getValue()}</span>
-      </div>
-    ),
-  }),
-  serviceColumnHelper.accessor("joinedAt", {
-    header: "Date of Joining",
-    cell: (info) => <span className="text-gray-600">{info.getValue()}</span>,
-  }),
-];
 
 // --- Main Component ---
 
@@ -469,21 +129,430 @@ export default function CategoriesPage() {
   const [globalFilter, setGlobalFilter] = useState("");
   const [activeTab, setActiveTab] = useState("Categories");
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Form state
+  const [formName, setFormName] = useState("");
+  const [formDescription, setFormDescription] = useState("");
+  const [formParentCategoryId, setFormParentCategoryId] = useState("");
   const [isFeatured, setIsFeatured] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // API state
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const invalidateGlobalCache = useCategoriesStore(
+    (state) => state.invalidateCache
+  );
+
+  // Fetch categories
+  const fetchCategories = async () => {
+    try {
+      setIsLoading(true);
+      const response = await apiService.getCategories(true); // Include inactive for admin
+      setCategories(response.categories);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to fetch categories"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  // Transform categories to table format
+  const categoryTableData: CategoryTableRow[] = useMemo(() => {
+    return categories.map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      subCategories: cat.subCategories?.length || 0,
+      activeListings: 0, // This would come from services count
+      isFeatured: cat.featured,
+      imageUrl: cat.imageUrl,
+      createdAt: cat.createdAt
+        ? new Date(cat.createdAt).toLocaleDateString("en-US", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          })
+        : "",
+    }));
+  }, [categories]);
+
+  const featuredCategories = useMemo(() => {
+    return categoryTableData
+      .filter((cat) => cat.isFeatured)
+      .map((cat, index) => ({
+        ...cat,
+        displayOrder: `#${index + 1}`,
+      }));
+  }, [categoryTableData]);
+
+  // Handle image selection
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = () => setImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Reset form
+  const resetForm = () => {
+    setFormName("");
+    setFormDescription("");
+    setFormParentCategoryId("");
+    setIsFeatured(false);
+    setSelectedImage(null);
+    setImagePreview(null);
+    setIsEditMode(false);
+    setEditingCategory(null);
+  };
+
+  // Handle form submit
+  const handleSubmit = async () => {
+    if (!formName.trim()) {
+      toast.error("Category name is required");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      if (isEditMode && editingCategory) {
+        await apiService.updateCategory(
+          editingCategory.id,
+          {
+            name: formName,
+            description: formDescription || undefined,
+            parentCategoryId: formParentCategoryId || null,
+            featured: isFeatured,
+          },
+          selectedImage || undefined
+        );
+      } else {
+        await apiService.createCategory(
+          {
+            name: formName,
+            description: formDescription || undefined,
+            parentCategoryId: formParentCategoryId || undefined,
+            featured: isFeatured,
+          },
+          selectedImage || undefined
+        );
+      }
+
+      setIsAddCategoryOpen(false);
+      resetForm();
+      fetchCategories();
+      invalidateGlobalCache(); // Refresh cache for other components
+      toast.success(
+        isEditMode
+          ? "Category updated successfully!"
+          : "Category created successfully!"
+      );
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save category"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle edit
+  const handleEdit = (category: CategoryTableRow) => {
+    const fullCategory = categories.find((c) => c.id === category.id);
+    if (fullCategory) {
+      setEditingCategory(fullCategory);
+      setFormName(fullCategory.name);
+      setFormDescription(fullCategory.description || "");
+      setFormParentCategoryId(fullCategory.parentCategoryId || "");
+      setIsFeatured(fullCategory.featured);
+      setImagePreview(fullCategory.imageUrl || null);
+      setIsEditMode(true);
+      setIsAddCategoryOpen(true);
+    }
+  };
+
+  // Handle delete - show confirmation modal
+  const openDeleteDialog = (id: string) => {
+    setCategoryToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!categoryToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      await apiService.deleteCategory(categoryToDelete);
+      toast.success("Category deleted successfully!");
+      fetchCategories();
+      invalidateGlobalCache(); // Refresh cache for other components
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to delete category"
+      );
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setCategoryToDelete(null);
+    }
+  };
+
+  // --- Column Definitions ---
+  const categoryColumns = useMemo(
+    () => [
+      categoryColumnHelper.accessor("name", {
+        header: "Category",
+        cell: (info) => (
+          <div className="flex items-center gap-3">
+            {info.row.original.imageUrl && (
+              <div className="w-8 h-8 rounded overflow-hidden bg-gray-100">
+                <Image
+                  src={info.row.original.imageUrl}
+                  alt={info.getValue()}
+                  width={32}
+                  height={32}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+            <span className="font-medium text-gray-900">{info.getValue()}</span>
+          </div>
+        ),
+      }),
+      categoryColumnHelper.accessor("subCategories", {
+        header: "Sub-categories",
+        cell: (info) => (
+          <span className="text-gray-600">{info.getValue()}</span>
+        ),
+      }),
+      categoryColumnHelper.accessor("activeListings", {
+        header: "Active listings",
+        cell: (info) => (
+          <span className="text-gray-600">{info.getValue()}</span>
+        ),
+      }),
+      categoryColumnHelper.accessor("isFeatured", {
+        header: "Featured",
+        cell: (info) => {
+          const isFeatured = info.getValue();
+          return (
+            <div className="flex items-center">
+              {isFeatured ? (
+                <div className="flex items-center justify-center w-5 h-5 bg-green-700 rounded text-white">
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                </div>
+              ) : (
+                <span className="text-gray-400 font-medium text-lg ml-1">
+                  —
+                </span>
+              )}
+            </div>
+          );
+        },
+      }),
+      categoryColumnHelper.accessor("createdAt", {
+        header: "Date of created",
+        cell: (info) => (
+          <span className="text-gray-600">{info.getValue()}</span>
+        ),
+      }),
+      categoryColumnHelper.display({
+        id: "actions",
+        header: "Action",
+        cell: ({ row }) => (
+          <div className="text-right">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreVertical className="w-4 h-4 text-gray-500" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleEdit(row.original)}>
+                  Edit Category
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-red-600"
+                  onClick={() => openDeleteDialog(row.original.id)}
+                >
+                  Delete Category
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ),
+        meta: { align: "right" },
+      }),
+    ],
+    [categories]
+  );
+
+  const featuredColumns = useMemo(
+    () => [
+      categoryColumnHelper.accessor("name", {
+        header: "Category",
+        cell: (info) => (
+          <span className="font-medium text-gray-900">{info.getValue()}</span>
+        ),
+      }),
+      categoryColumnHelper.accessor("subCategories", {
+        header: "Sub-categories",
+        cell: (info) => (
+          <span className="text-gray-600">{info.getValue()}</span>
+        ),
+      }),
+      categoryColumnHelper.accessor("activeListings", {
+        header: "Active listings",
+        cell: (info) => (
+          <span className="text-gray-600">{info.getValue()}</span>
+        ),
+      }),
+      categoryColumnHelper.accessor("displayOrder", {
+        header: "Display",
+        cell: (info) => (
+          <span className="text-gray-600">{info.getValue()}</span>
+        ),
+      }),
+      categoryColumnHelper.accessor("createdAt", {
+        header: "Date of created",
+        cell: (info) => (
+          <span className="text-gray-600">{info.getValue()}</span>
+        ),
+      }),
+      categoryColumnHelper.display({
+        id: "actions",
+        header: "Action",
+        cell: ({ row }) => (
+          <div className="text-right">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreVertical className="w-4 h-4 text-gray-500" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleEdit(row.original)}>
+                  Remove from Featured
+                </DropdownMenuItem>
+                <DropdownMenuItem>Edit Order</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ),
+        meta: { align: "right" },
+      }),
+    ],
+    []
+  );
+
+  const serviceColumns = [
+    serviceColumnHelper.accessor("title", {
+      header: "Service Title",
+      cell: (info) => (
+        <span className="font-medium text-gray-900">{info.getValue()}</span>
+      ),
+      size: 250,
+    }),
+    serviceColumnHelper.accessor("category", {
+      header: "Category",
+      cell: (info) => (
+        <span className="font-medium text-gray-900">{info.getValue()}</span>
+      ),
+    }),
+    serviceColumnHelper.accessor("provider", {
+      header: "Provider",
+      cell: (info) => (
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 relative">
+            <Image
+              src={info.row.original.provider.avatar}
+              alt={info.row.original.provider.name}
+              fill
+              className="object-cover"
+            />
+          </div>
+          <span className="font-medium text-gray-900">
+            {info.row.original.provider.name}
+          </span>
+        </div>
+      ),
+    }),
+    serviceColumnHelper.accessor("orders", {
+      header: "Orders",
+      cell: (info) => <span className="text-gray-600">{info.getValue()}</span>,
+    }),
+    serviceColumnHelper.accessor("status", {
+      header: "Status",
+      cell: (info) => {
+        const status = info.getValue();
+        let badgeStyles = "bg-gray-50 text-gray-700";
+        let dotStyles = "bg-gray-500";
+
+        if (status === "Active") {
+          badgeStyles = "bg-green-50 text-green-700";
+          dotStyles = "bg-green-500";
+        } else if (status === "Pending") {
+          badgeStyles = "bg-orange-50 text-orange-700";
+          dotStyles = "bg-orange-500";
+        }
+
+        return (
+          <div
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeStyles}`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full mr-1.5 ${dotStyles}`}
+            ></span>
+            {status}
+          </div>
+        );
+      },
+    }),
+    serviceColumnHelper.accessor("rating", {
+      header: "Rating",
+      cell: (info) => (
+        <div className="flex items-center gap-1 text-gray-600">
+          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+          <span>{info.getValue()}</span>
+        </div>
+      ),
+    }),
+    serviceColumnHelper.accessor("joinedAt", {
+      header: "Date of Joining",
+      cell: (info) => <span className="text-gray-600">{info.getValue()}</span>,
+    }),
+  ];
 
   // --- Table Configuration ---
 
   const currentData = useMemo(() => {
     switch (activeTab) {
       case "All Services":
-        return services;
+        return mockServices;
       case "Featured":
-        return featuredItems;
+        return featuredCategories;
       case "Categories":
       default:
-        return categories;
+        return categoryTableData;
     }
-  }, [activeTab]);
+  }, [activeTab, categoryTableData, featuredCategories]);
 
   const currentColumns = useMemo(() => {
     switch (activeTab) {
@@ -495,11 +564,11 @@ export default function CategoriesPage() {
       default:
         return categoryColumns;
     }
-  }, [activeTab]);
+  }, [activeTab, categoryColumns, featuredColumns]);
 
   const table = useReactTable({
     data: currentData,
-    columns: currentColumns as ColumnDef<Category | Service, any>[],
+    columns: currentColumns as ColumnDef<CategoryTableRow | Service, unknown>[],
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -517,6 +586,11 @@ export default function CategoriesPage() {
     if (activeTab === "Featured") return "Add featured Item";
     return "Add new category";
   };
+
+  // Get parent category options (exclude current category if editing)
+  const parentCategoryOptions = categories.filter(
+    (cat) => !editingCategory || cat.id !== editingCategory.id
+  );
 
   return (
     <div className="space-y-8">
@@ -583,6 +657,7 @@ export default function CategoriesPage() {
             className="bg-green-700 hover:bg-green-800 text-white gap-2"
             onClick={() => {
               if (activeTab === "Categories") {
+                resetForm();
                 setIsAddCategoryOpen(true);
               } else if (activeTab === "All Services") {
                 router.push("/dashboard/services/new");
@@ -595,138 +670,157 @@ export default function CategoriesPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50 text-xs font-medium text-gray-500 uppercase border-b border-gray-200">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className={cn(
-                      "px-6 py-4 font-medium",
-                      (header.column.columnDef.meta as any)?.align === "right"
-                        ? "text-right"
-                        : ""
-                    )}
-                    onClick={header.column.getToggleSortingHandler()}
-                    style={{
-                      cursor: header.column.getCanSort()
-                        ? "pointer"
-                        : "default",
-                    }}
-                  >
-                    <div
+      {/* Loading State */}
+      {isLoading && activeTab !== "All Services" ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-green-600" />
+        </div>
+      ) : (
+        /* Table */
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-gray-50 text-xs font-medium text-gray-500 uppercase border-b border-gray-200">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <th
+                      key={header.id}
                       className={cn(
-                        "flex items-center gap-1",
-                        (header.column.columnDef.meta as any)?.align === "right"
-                          ? "justify-end"
+                        "px-6 py-4 font-medium",
+                        (header.column.columnDef.meta as { align?: string })
+                          ?.align === "right"
+                          ? "text-right"
                           : ""
                       )}
+                      onClick={header.column.getToggleSortingHandler()}
+                      style={{
+                        cursor: header.column.getCanSort()
+                          ? "pointer"
+                          : "default",
+                      }}
                     >
+                      <div
+                        className={cn(
+                          "flex items-center gap-1",
+                          (header.column.columnDef.meta as { align?: string })
+                            ?.align === "right"
+                            ? "justify-end"
+                            : ""
+                        )}
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {table.getRowModel().rows.map((row) => (
+                <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="px-6 py-4">
                       {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
+                        cell.column.columnDef.cell,
+                        cell.getContext()
                       )}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-6 py-4">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-        {/* Pagination */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2 text-gray-600"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Previous
-          </Button>
-          <div className="flex items-center gap-1">
+          {/* Pagination */}
+          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
             <Button
-              variant="secondary"
+              variant="outline"
               size="sm"
-              className="h-8 w-8 p-0 bg-green-50 text-green-700 border-0 font-medium"
+              className="flex items-center gap-2 text-gray-600"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
             >
-              1
+              <ChevronLeft className="w-4 h-4" />
+              Previous
             </Button>
+            <div className="flex items-center gap-1">
+              <span className="text-sm text-gray-600">
+                Page {table.getState().pagination.pageIndex + 1} of{" "}
+                {table.getPageCount()}
+              </span>
+            </div>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="h-8 w-8 p-0 text-gray-600"
+              className="flex items-center gap-2 text-gray-600"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
             >
-              2
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 text-gray-600"
-            >
-              3
-            </Button>
-            <span className="text-gray-400 px-2">...</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 text-gray-600"
-            >
-              8
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 text-gray-600"
-            >
-              9
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 text-gray-600"
-            >
-              10
+              Next
+              <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2 text-gray-600"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-            <ChevronRight className="w-4 h-4" />
-          </Button>
         </div>
-      </div>
+      )}
 
-      <Sheet open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen}>
+      {/* Add/Edit Category Sheet */}
+      <Sheet
+        open={isAddCategoryOpen}
+        onOpenChange={(open) => {
+          setIsAddCategoryOpen(open);
+          if (!open) resetForm();
+        }}
+      >
         <SheetContent className="sm:max-w-[500px] p-0">
           <SheetHeader className="px-6 py-6 border-b border-gray-100">
             <SheetTitle className="text-xl font-semibold">
-              Add New Category
+              {isEditMode ? "Edit Category" : "Add New Category"}
             </SheetTitle>
           </SheetHeader>
 
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+            {/* Category Image */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Category Image
+              </label>
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-gray-200 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:border-green-500 transition-colors"
+              >
+                {imagePreview ? (
+                  <div className="relative w-24 h-24">
+                    <Image
+                      src={imagePreview}
+                      alt="Preview"
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-500">
+                      Click to upload image
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      SVG, PNG, JPG (max 5MB)
+                    </p>
+                  </>
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/svg+xml,image/png,image/jpeg,image/jpg,image/webp"
+                className="hidden"
+                onChange={handleImageSelect}
+              />
+            </div>
+
             {/* Category Name */}
             <div className="space-y-2">
               <label
@@ -739,6 +833,8 @@ export default function CategoriesPage() {
                 id="category-name"
                 placeholder="e.g. electronics"
                 className="bg-white"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
               />
             </div>
 
@@ -754,6 +850,8 @@ export default function CategoriesPage() {
                 id="description"
                 placeholder="Enter a description..."
                 className="flex min-h-[120px] w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={formDescription}
+                onChange={(e) => setFormDescription(e.target.value)}
               />
             </div>
 
@@ -763,18 +861,21 @@ export default function CategoriesPage() {
                 htmlFor="parent-category"
                 className="text-sm font-medium text-gray-700"
               >
-                Parent category(Optional)
+                Parent category (Optional)
               </label>
               <div className="relative">
                 <select
                   id="parent-category"
                   className="flex h-10 w-full appearance-none rounded-lg border border-input bg-transparent px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={formParentCategoryId}
+                  onChange={(e) => setFormParentCategoryId(e.target.value)}
                 >
-                  <option value="" disabled selected>
-                    Select an option
-                  </option>
-                  <option value="1">Architecture</option>
-                  <option value="2">Beauty & Grooming</option>
+                  <option value="">Select an option</option>
+                  {parentCategoryOptions.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
                 </select>
                 <ChevronRight className="absolute right-3 top-3 h-4 w-4 rotate-90 text-gray-500 pointer-events-none" />
               </div>
@@ -815,16 +916,76 @@ export default function CategoriesPage() {
                 variant="outline"
                 onClick={() => setIsAddCategoryOpen(false)}
                 className="flex-1 border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-gray-900 h-11"
+                disabled={isSubmitting}
               >
                 Cancel
               </Button>
-              <Button className="flex-1 bg-green-800 hover:bg-green-900 text-white h-11">
-                Save
+              <Button
+                className="flex-1 bg-green-800 hover:bg-green-900 text-white h-11"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : null}
+                {isEditMode ? "Update" : "Save"}
               </Button>
             </div>
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-white">
+          <div className="flex flex-col items-center text-center p-4">
+            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
+              <svg
+                className="w-6 h-6 text-red-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+            </div>
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold text-gray-900 text-center">
+                Delete Category
+              </DialogTitle>
+              <DialogDescription className="text-center text-gray-500 mt-2">
+                Are you sure you want to delete this category? This action
+                cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <DialogFooter className="flex gap-3 sm:justify-center w-full px-4 pb-4">
+            <Button
+              variant="outline"
+              className="flex-1 border-gray-200"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : null}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

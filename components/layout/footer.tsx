@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -8,25 +10,10 @@ import {
   MessageCircle,
   Music2,
 } from "lucide-react";
+import { useCategories } from "@/store/categories-store";
 
 export function Footer() {
-  const categories = [
-    { label: "Graphics & Design", slug: "graphics-design" },
-    { label: "Digital Marketing", slug: "digital-marketing" },
-    { label: "Writing & Translation", slug: "writing-translation" },
-    { label: "Video & Animation", slug: "video-animation" },
-    { label: "Music & Audio", slug: "music-audio" },
-    { label: "Programming & Tech", slug: "programming-tech" },
-    { label: "AI Services", slug: "ai-services" },
-    { label: "Consulting", slug: "consulting" },
-    { label: "Data", slug: "data" },
-    { label: "Business", slug: "business" },
-    { label: "Personal Growth & Hobbies", slug: "personal-growth-hobbies" },
-    { label: "Photography", slug: "photography" },
-    { label: "Finance", slug: "finance" },
-    { label: "End-to-End Projects", slug: "end-to-end-projects" },
-    { label: "Service Catalog", slug: "service-catalog" },
-  ];
+  const { topLevelCategories, isLoading } = useCategories();
 
   const companyLinks = [
     { label: "About AVADgh", href: "#" },
@@ -114,16 +101,24 @@ export function Footer() {
           <div>
             <h3 className="text-base font-semibold mb-4">Categories</h3>
             <ul className="space-y-2.5">
-              {categories.map((category, index) => (
-                <li key={index}>
-                  <Link
-                    href={`/categories/${category.slug}`}
-                    className="text-sm text-gray-300 hover:text-white transition-colors"
-                  >
-                    {category.label}
-                  </Link>
+              {isLoading ? (
+                <li className="text-sm text-gray-500">Loading...</li>
+              ) : topLevelCategories.length > 0 ? (
+                topLevelCategories.slice(0, 15).map((category) => (
+                  <li key={category.id}>
+                    <Link
+                      href={`/categories/${category.id}`}
+                      className="text-sm text-gray-300 hover:text-white transition-colors"
+                    >
+                      {category.name}
+                    </Link>
+                  </li>
+                ))
+              ) : (
+                <li className="text-sm text-gray-500">
+                  No categories available
                 </li>
-              ))}
+              )}
             </ul>
           </div>
 

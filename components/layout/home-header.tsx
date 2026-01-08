@@ -20,6 +20,7 @@ import { Logo } from "./logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useCategories } from "@/store/categories-store";
 
 export function HomeHeader() {
   const router = useRouter();
@@ -31,6 +32,38 @@ export function HomeHeader() {
     startUserFlow,
     startProviderFlow,
   } = useAuthStore();
+  const { topLevelCategories, isLoading: categoriesLoading } = useCategories();
+
+  const renderCategoriesDropdown = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex items-center space-x-1 text-gray-700 hover:text-green-600 font-medium text-sm">
+          <span>Categories</span>
+          <ChevronDown className="w-4 h-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-48">
+        {categoriesLoading ? (
+          <DropdownMenuItem disabled>
+            <span className="text-gray-400">Loading...</span>
+          </DropdownMenuItem>
+        ) : topLevelCategories.length > 0 ? (
+          topLevelCategories.map((category) => (
+            <DropdownMenuItem
+              key={category.id}
+              onClick={() => router.push(`/categories/${category.id}`)}
+            >
+              <span>{category.name}</span>
+            </DropdownMenuItem>
+          ))
+        ) : (
+          <DropdownMenuItem disabled>
+            <span className="text-gray-400">No categories</span>
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
     <header className="bg-white border-b border-gray-200">
@@ -43,31 +76,7 @@ export function HomeHeader() {
             /* Authenticated Header (Service Page Style) */
             <div className="flex items-center space-x-6">
               {/* Categories Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center space-x-1 text-gray-700 hover:text-green-600 font-medium text-sm">
-                    <span>Categories</span>
-                    <ChevronDown className="w-4 h-4" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48">
-                  <DropdownMenuItem>
-                    <span>Graphics & Design</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <span>Digital Marketing</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <span>Writing & Translation</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <span>Video & Animation</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <span>Programming & Tech</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {renderCategoriesDropdown()}
 
               {/* Help & Support Dropdown */}
               <DropdownMenu>
@@ -207,31 +216,7 @@ export function HomeHeader() {
                 <ThemeToggle />
 
                 {/* Categories Dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="flex items-center space-x-1 text-gray-700 hover:text-green-600 font-medium text-sm">
-                      <span>Categories</span>
-                      <ChevronDown className="w-4 h-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-48">
-                    <DropdownMenuItem>
-                      <span>Home Services</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <span>Digital Services</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <span>Professional Services</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <span>Creative Services</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <span>Business Services</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {renderCategoriesDropdown()}
 
                 {/* Help & Support Dropdown */}
                 <DropdownMenu>

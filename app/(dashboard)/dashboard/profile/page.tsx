@@ -1,6 +1,5 @@
 "use client";
 
-// ... imports
 import { useState } from "react";
 import Image from "next/image";
 import {
@@ -9,6 +8,11 @@ import {
   Mail,
   MapPin,
   Pencil,
+  FileText,
+  CheckCircle2,
+  CheckSquare,
+  Square,
+  Circle,
   Eye,
   EyeOff,
   Lock,
@@ -18,7 +22,6 @@ import {
   Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-// ...
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -114,23 +117,29 @@ export default function ProfileSettingsPage() {
 
       {/* --- General Settings Tab --- */}
       {activeTab === "general" && (
-        <div className="space-y-8">
+        <>
           {/* Avatar Section */}
           <div className="flex items-center gap-6">
-            <div className="w-24 h-24 rounded-full bg-pink-300 overflow-hidden relative border-4 border-white shadow-sm flex items-center justify-center">
+            <div className="w-20 h-20 rounded-full bg-pink-200 overflow-hidden relative border-4 border-white shadow-sm">
               <Image
-                src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
                 alt="Profile"
                 fill
                 className="object-cover"
               />
             </div>
-            <Button
-              variant="outline"
-              className="text-gray-700 border-gray-200 h-10 px-4 rounded-lg bg-white"
-            >
-              Change picture
-            </Button>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                className="text-gray-700 border-gray-200 h-9 px-4 rounded-lg bg-white"
+              >
+                Change picture
+              </Button>
+              <span className="text-sm font-medium text-orange-500 flex items-center gap-1.5">
+                Pending{" "}
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+              </span>
+            </div>
           </div>
 
           {/* Personal Information */}
@@ -139,7 +148,7 @@ export default function ProfileSettingsPage() {
               <h3 className="text-base font-bold text-gray-900">
                 Personal Information
               </h3>
-              <button className="flex items-center gap-1.5 text-sm font-medium text-gray-400 hover:text-gray-900">
+              <button className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-900">
                 <Pencil className="w-4 h-4" />
                 Edit
               </button>
@@ -147,7 +156,7 @@ export default function ProfileSettingsPage() {
 
             <div className="space-y-5">
               <div className="flex items-center gap-3">
-                <User className="w-5 h-5 text-gray-900 stroke-[1.5]" />
+                <User className="w-5 h-5 text-gray-400" />
                 <span className="text-sm text-gray-900 font-medium">
                   Robert Sam
                 </span>
@@ -155,7 +164,7 @@ export default function ProfileSettingsPage() {
 
               <div className="flex items-center justify-between max-w-md">
                 <div className="flex items-center gap-3">
-                  <Phone className="w-5 h-5 text-gray-900 stroke-[1.5]" />
+                  <Phone className="w-5 h-5 text-gray-400" />
                   <span className="text-sm text-gray-900 font-medium">
                     +233536845216
                   </span>
@@ -167,25 +176,144 @@ export default function ProfileSettingsPage() {
 
               <div className="flex items-center justify-between max-w-md">
                 <div className="flex items-center gap-3">
-                  <Mail className="w-5 h-5 text-gray-900 stroke-[1.5]" />
+                  <Mail className="w-5 h-5 text-gray-400" />
                   <span className="text-sm text-gray-900 font-medium">
                     robert.sam@example.com
                   </span>
                 </div>
                 <span className="text-xs font-medium text-green-600">
-                  Verified
+                  Not verified
                 </span>
               </div>
 
               <div className="flex items-center gap-3">
-                <MapPin className="w-5 h-5 text-gray-900 stroke-[1.5]" />
+                <MapPin className="w-5 h-5 text-gray-400" />
                 <span className="text-sm text-gray-900 font-medium">
-                  Takoradi,Ama Akroma RD
+                  Takoradi, Ama Akroma RD
                 </span>
               </div>
             </div>
           </div>
-        </div>
+
+          {/* Professional Information */}
+          <div className="space-y-8">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-gray-900">
+                Professional Information
+              </h3>
+              <button className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-900">
+                <Pencil className="w-4 h-4" />
+                Edit
+              </button>
+            </div>
+
+            {/* Short Bio */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-900">
+                Short Bio
+              </label>
+              <div className="border border-gray-200 rounded-lg p-4 text-sm text-gray-600 leading-relaxed bg-white">
+                As a skilled artisan, I specialize in creating unique
+                handcrafted pieces that blend traditional techniques with modern
+                design. My passion for craftsmanship drives me to explore new
+                materials and methods, ensuring each creation tells a story.
+                With years of experience, I take pride in delivering quality
+                work that resonates with my clients&apos; visions.
+              </div>
+            </div>
+
+            {/* Skills & Services */}
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-gray-900">
+                Skills & Services
+              </label>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded border border-gray-300 bg-green-50 flex items-center justify-center text-green-600">
+                    <CheckSquare className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-sm font-bold text-gray-900">
+                    Architect & Interior Designer
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded border border-gray-300 bg-green-50 flex items-center justify-center text-green-600">
+                    <CheckSquare className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-sm font-bold text-gray-900">
+                    Home Decor
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Experience Level */}
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-gray-900">
+                Experience Level
+              </label>
+              <div className="bg-gray-50/50 rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-2 opacity-50">
+                  <Circle className="w-4 h-4 text-gray-300" />
+                  <span className="text-sm text-gray-500">Expert</span>
+                </div>
+                <div className="flex items-center gap-2 opacity-50">
+                  <Circle className="w-4 h-4 text-gray-300" />
+                  <span className="text-sm text-gray-500">Intermediate</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded-full border-2 border-green-600 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-green-600" />
+                  </div>
+                  <span className="text-sm font-bold text-gray-900">
+                    Beginner
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Verification & Trust */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold text-gray-900">
+                  Verification & Trust
+                </h3>
+                <button className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-900">
+                  <Pencil className="w-3.5 h-3.5" />
+                  Edit
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                {[
+                  { status: "Not verified", color: "text-gray-400" },
+                  { status: "Not verified", color: "text-gray-400" },
+                  { status: "Verified", color: "text-green-600" },
+                ].map((item, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between bg-gray-50/50 p-3 rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded bg-green-50 flex items-center justify-center text-green-600">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          Tech design certificate.pdf
+                        </p>
+                        <p className="text-xs text-gray-500">200 KB</p>
+                      </div>
+                    </div>
+                    <span className={cn("text-xs font-medium", item.color)}>
+                      {item.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* --- Change Password Tab --- */}
