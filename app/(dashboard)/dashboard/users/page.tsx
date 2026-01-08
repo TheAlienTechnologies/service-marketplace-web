@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -20,6 +20,7 @@ import {
   XCircle,
   ChevronLeft,
   ChevronRight,
+  Loader2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -29,230 +30,308 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import Image from "next/image";
-
-// Define User Type
-type User = {
-  id: number;
-  name: string;
-  role: string;
-  email: string;
-  status: string;
-  verification: string;
-  date: string;
-  avatar: string;
-};
-
-// Mock Data
-const users: User[] = [
-  {
-    id: 1,
-    name: "Olivia Rhye",
-    role: "Admin",
-    email: "alma.lawson@example.com",
-    status: "Active",
-    verification: "Verified",
-    date: "15 Mar, 2025",
-    avatar:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-  },
-  {
-    id: 2,
-    name: "Phoenix Baker",
-    role: "Client",
-    email: "dolores.chambers@example.com",
-    status: "Active",
-    verification: "Verified",
-    date: "10 Aug, 2025",
-    avatar:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-  },
-  {
-    id: 3,
-    name: "Lana Steiner",
-    role: "Freelancer",
-    email: "kenzi.lawson@example.com",
-    status: "Suspended",
-    verification: "Failed",
-    date: "25 Oct, 2025",
-    avatar:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-  },
-  {
-    id: 4,
-    name: "Demi Wilkinson",
-    role: "Freelancer",
-    email: "felicia.reid@example.com",
-    status: "Active",
-    verification: "Verified",
-    date: "30 Nov, 2025",
-    avatar:
-      "https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-  },
-  {
-    id: 5,
-    name: "Candice Wu",
-    role: "Freelancer",
-    email: "debbie.baker@example.com",
-    status: "Pending",
-    verification: "Pending",
-    date: "5 Apr, 2025",
-    avatar:
-      "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-  },
-  {
-    id: 6,
-    name: "Natali Craig",
-    role: "Client",
-    email: "deanna.curtis@example.com",
-    status: "Suspended",
-    verification: "Verified",
-    date: "12 Feb, 2025",
-    avatar:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-  },
-  {
-    id: 7,
-    name: "Drew Cano",
-    role: "Admin",
-    email: "sara.cruz@example.com",
-    status: "Suspended",
-    verification: "Failed",
-    date: "22 Jun, 2025",
-    avatar:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-  },
-];
+import { apiService } from "@/lib/api";
+import { User } from "@/types/auth";
+import { toast } from "react-toastify";
 
 const columnHelper = createColumnHelper<User>();
-
-const columns = [
-  columnHelper.accessor("name", {
-    header: "Name",
-    cell: (info) => (
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 relative">
-          <Image
-            src={info.row.original.avatar}
-            alt={info.getValue()}
-            fill
-            className="object-cover"
-          />
-        </div>
-        <span className="font-medium text-gray-900">{info.getValue()}</span>
-      </div>
-    ),
-    size: 250,
-  }),
-  columnHelper.accessor("role", {
-    header: "Role",
-    cell: (info) => <span className="text-gray-600">{info.getValue()}</span>,
-  }),
-  columnHelper.accessor("email", {
-    header: "Email",
-    cell: (info) => <span className="text-gray-600">{info.getValue()}</span>,
-  }),
-  columnHelper.accessor("status", {
-    header: "Status",
-    cell: (info) => {
-      const status = info.getValue();
-
-      let badgeStyles = "bg-gray-50 text-gray-700 border-gray-200";
-      let dotStyles = "bg-gray-500";
-
-      if (status === "Active") {
-        badgeStyles = "bg-green-50 text-green-700 border-green-200";
-        dotStyles = "bg-green-500";
-      } else if (status === "Pending") {
-        badgeStyles = "bg-orange-50 text-orange-700 border-orange-200";
-        dotStyles = "bg-orange-500";
-      }
-
-      return (
-        <div
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${badgeStyles}`}
-        >
-          <span
-            className={`w-1.5 h-1.5 rounded-full mr-1.5 ${dotStyles}`}
-          ></span>
-          {status}
-        </div>
-      );
-    },
-  }),
-  columnHelper.accessor("verification", {
-    header: "Verification",
-    cell: (info) => {
-      const verification = info.getValue();
-
-      let textStyles = "text-red-700";
-      if (verification === "Verified") {
-        textStyles = "text-green-700";
-      } else if (verification === "Pending") {
-        textStyles = "text-orange-700";
-      }
-
-      return (
-        <div
-          className={`flex items-center gap-1.5 text-xs font-medium ${textStyles}`}
-        >
-          {verification}
-          {verification === "Verified" && (
-            <CheckCircle2 className="w-3.5 h-3.5" />
-          )}
-          {verification === "Pending" && <Clock className="w-3.5 h-3.5" />}
-          {verification === "Failed" && <XCircle className="w-3.5 h-3.5" />}
-        </div>
-      );
-    },
-  }),
-  columnHelper.accessor("date", {
-    header: "Date of Joining",
-    cell: (info) => <span className="text-gray-600">{info.getValue()}</span>,
-  }),
-  columnHelper.display({
-    id: "actions",
-    header: "Action",
-    cell: () => (
-      <div className="text-right">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreVertical className="w-4 h-4 text-gray-500" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>Edit Details</DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600">
-              Delete User
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    ),
-    meta: {
-      align: "right",
-    },
-  }),
-];
 
 export default function UsersPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+  });
+
+  // Delete dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Status update state
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [userToUpdate, setUserToUpdate] = useState<User | null>(null);
+  const [newStatus, setNewStatus] = useState<"ACTIVE" | "SUSPENDED" | null>(
+    null
+  );
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  const fetchUsers = async (page = 1) => {
+    try {
+      setIsLoading(true);
+      const response = await apiService.getUsers({
+        page,
+        limit: pagination.limit,
+        search: globalFilter || undefined,
+      });
+      setUsers(response.users);
+      setPagination({
+        page: response.page,
+        limit: response.limit,
+        total: response.total,
+        totalPages: response.totalPages,
+      });
+    } catch (error) {
+      toast.error("Failed to fetch users");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchUsers(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [globalFilter]);
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    try {
+      setIsDeleting(true);
+      await apiService.deleteUser(userToDelete);
+      toast.success("User deleted successfully");
+      fetchUsers(pagination.page);
+    } catch (error) {
+      toast.error("Failed to delete user");
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
+    }
+  };
+
+  const handleStatusUpdate = async () => {
+    if (!userToUpdate || !newStatus) return;
+    try {
+      setIsUpdatingStatus(true);
+      await apiService.updateUserStatus(userToUpdate.id, newStatus);
+      toast.success("User status updated successfully");
+      fetchUsers(pagination.page);
+    } catch (error) {
+      toast.error("Failed to update user status");
+    } finally {
+      setIsUpdatingStatus(false);
+      setStatusDialogOpen(false);
+      setUserToUpdate(null);
+      setNewStatus(null);
+    }
+  };
+
+  const openDeleteDialog = (userId: string) => {
+    setUserToDelete(userId);
+    setDeleteDialogOpen(true);
+  };
+
+  const openStatusDialog = (
+    user: User,
+    status: "ACTIVE" | "SUSPENDED"
+  ) => {
+    setUserToUpdate(user);
+    setNewStatus(status);
+    setStatusDialogOpen(true);
+  };
+
+  const getUserDisplayName = (user: User) => {
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    return user.displayName || user.email.split("@")[0];
+  };
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "ADMIN":
+        return "Admin";
+      case "SERVICE_PROVIDER":
+        return "Freelancer";
+      case "USER":
+        return "Client";
+      default:
+        return role;
+    }
+  };
+
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor("email", {
+        id: "name",
+        header: "Name",
+        cell: (info) => (
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 relative">
+              {info.row.original.avatar ? (
+                <Image
+                  src={info.row.original.avatar}
+                  alt={getUserDisplayName(info.row.original)}
+                  fill
+                  className="object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-500 font-medium">
+                  {getUserDisplayName(info.row.original)
+                    .charAt(0)
+                    .toUpperCase()}
+                </div>
+              )}
+            </div>
+            <span className="font-medium text-gray-900">
+              {getUserDisplayName(info.row.original)}
+            </span>
+          </div>
+        ),
+        size: 250,
+      }),
+      columnHelper.accessor("role", {
+        header: "Role",
+        cell: (info) => (
+          <span className="text-gray-600">{getRoleLabel(info.getValue())}</span>
+        ),
+      }),
+      columnHelper.accessor("email", {
+        id: "userEmail",
+        header: "Email",
+        cell: (info) => (
+          <span className="text-gray-600">{info.getValue()}</span>
+        ),
+      }),
+      columnHelper.accessor("status", {
+        header: "Status",
+        cell: (info) => {
+          const status = info.getValue();
+
+          let badgeStyles = "bg-gray-50 text-gray-700 border-gray-200";
+          let dotStyles = "bg-gray-500";
+
+          if (status === "ACTIVE") {
+            badgeStyles = "bg-green-50 text-green-700 border-green-200";
+            dotStyles = "bg-green-500";
+          } else if (status === "SUSPENDED") {
+            badgeStyles = "bg-orange-50 text-orange-700 border-orange-200";
+            dotStyles = "bg-orange-500";
+          }
+
+          return (
+            <div
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${badgeStyles}`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full mr-1.5 ${dotStyles}`}
+              ></span>
+              {status}
+            </div>
+          );
+        },
+      }),
+      columnHelper.accessor("emailVerified", {
+        header: "Verification",
+        cell: (info) => {
+          const isVerified = info.getValue();
+          const textStyles = isVerified ? "text-green-700" : "text-orange-700";
+          const label = isVerified ? "Verified" : "Pending";
+
+          return (
+            <div
+              className={`flex items-center gap-1.5 text-xs font-medium ${textStyles}`}
+            >
+              {label}
+              {isVerified ? (
+                <CheckCircle2 className="w-3.5 h-3.5" />
+              ) : (
+                <Clock className="w-3.5 h-3.5" />
+              )}
+            </div>
+          );
+        },
+      }),
+      columnHelper.accessor("createdAt", {
+        header: "Date of Joining",
+        cell: (info) => (
+          <span className="text-gray-600">
+            {new Date(info.getValue()).toLocaleDateString("en-US", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
+          </span>
+        ),
+      }),
+      columnHelper.display({
+        id: "actions",
+        header: "Action",
+        cell: ({ row }) => (
+          <div className="text-right">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreVertical className="w-4 h-4 text-gray-500" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {row.original.status === "ACTIVE" ? (
+                  <DropdownMenuItem
+                    className="text-orange-600"
+                    onClick={() => openStatusDialog(row.original, "SUSPENDED")}
+                  >
+                    Suspend User
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem
+                    className="text-green-600"
+                    onClick={() => openStatusDialog(row.original, "ACTIVE")}
+                  >
+                    Activate User
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  className="text-red-600"
+                  onClick={() => openDeleteDialog(row.original.id)}
+                >
+                  Delete User
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        ),
+        meta: {
+          align: "right",
+        },
+      }),
+    ],
+    []
+  );
 
   const table = useReactTable({
     data: users,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     state: {
       sorting,
-      globalFilter,
     },
     onSortingChange: setSorting,
-    onGlobalFilterChange: setGlobalFilter,
+    manualPagination: true,
+    pageCount: pagination.totalPages,
   });
 
   return (
@@ -284,92 +363,208 @@ export default function UsersPage() {
 
       {/* Table */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className={`px-6 py-4 ${
-                      header.id === "name" ? "w-[250px]" : ""
-                    } ${
-                      (header.column.columnDef.meta as any)?.align === "right"
-                        ? "text-right"
-                        : ""
-                    }`}
-                    onClick={header.column.getToggleSortingHandler()}
-                    style={{
-                      cursor: header.column.getCanSort()
-                        ? "pointer"
-                        : "default",
-                    }}
-                  >
-                    <div className="flex items-center gap-1">
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                      {{
-                        asc: " ↑",
-                        desc: " ↓",
-                      }[header.column.getIsSorted() as string] ?? null}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-6 py-4">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {/* Pagination */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Previous
-          </Button>
-          <div className="flex items-center gap-1">
-            {/* Simplified pagination display for mock */}
-            <Button
-              variant="secondary"
-              size="sm"
-              className="h-8 w-8 p-0 bg-green-50 text-green-600 border-0"
-            >
-              {table.getState().pagination.pageIndex + 1}
-            </Button>
-            <span className="text-gray-400 px-2">
-              of {table.getPageCount()}
-            </span>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-6 h-6 animate-spin text-green-600" />
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
+        ) : (
+          <>
+            <table className="w-full text-sm text-left">
+              <thead className="bg-gray-50 text-gray-500 font-medium border-b border-gray-200">
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        className={`px-6 py-4 ${
+                          header.id === "name" ? "w-[250px]" : ""
+                        } ${
+                          (header.column.columnDef.meta as any)?.align ===
+                          "right"
+                            ? "text-right"
+                            : ""
+                        }`}
+                        onClick={header.column.getToggleSortingHandler()}
+                        style={{
+                          cursor: header.column.getCanSort()
+                            ? "pointer"
+                            : "default",
+                        }}
+                      >
+                        <div className="flex items-center gap-1">
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                          {{
+                            asc: " ↑",
+                            desc: " ↓",
+                          }[header.column.getIsSorted() as string] ?? null}
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {table.getRowModel().rows.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="px-6 py-12 text-center text-gray-500"
+                    >
+                      No users found
+                    </td>
+                  </tr>
+                ) : (
+                  table.getRowModel().rows.map((row) => (
+                    <tr
+                      key={row.id}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <td key={cell.id} className="px-6 py-4">
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+                onClick={() => fetchUsers(pagination.page - 1)}
+                disabled={pagination.page <= 1}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="h-8 w-8 p-0 bg-green-50 text-green-600 border-0"
+                >
+                  {pagination.page}
+                </Button>
+                <span className="text-gray-400 px-2">
+                  of {pagination.totalPages || 1}
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+                onClick={() => fetchUsers(pagination.page + 1)}
+                disabled={pagination.page >= pagination.totalPages}
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </>
+        )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-white">
+          <div className="flex flex-col items-center text-center p-4">
+            <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
+              <XCircle className="w-6 h-6 text-red-600" />
+            </div>
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold text-gray-900 text-center">
+                Delete User
+              </DialogTitle>
+              <DialogDescription className="text-center text-gray-500 mt-2">
+                Are you sure you want to delete this user? This action cannot be
+                undone.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <DialogFooter className="flex gap-3 sm:justify-center w-full px-4 pb-4">
+            <Button
+              variant="outline"
+              className="flex-1 border-gray-200"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleDeleteUser}
+              disabled={isDeleting}
+            >
+              {isDeleting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Status Update Dialog */}
+      <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-white">
+          <div className="flex flex-col items-center text-center p-4">
+            <div
+              className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${
+                newStatus === "SUSPENDED" ? "bg-orange-50" : "bg-green-50"
+              }`}
+            >
+              {newStatus === "SUSPENDED" ? (
+                <Clock className="w-6 h-6 text-orange-600" />
+              ) : (
+                <CheckCircle2 className="w-6 h-6 text-green-600" />
+              )}
+            </div>
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold text-gray-900 text-center">
+                {newStatus === "SUSPENDED" ? "Suspend User" : "Activate User"}
+              </DialogTitle>
+              <DialogDescription className="text-center text-gray-500 mt-2">
+                {newStatus === "SUSPENDED"
+                  ? "This user will be suspended and won't be able to access the platform."
+                  : "This user will be reactivated and can access the platform again."}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <DialogFooter className="flex gap-3 sm:justify-center w-full px-4 pb-4">
+            <Button
+              variant="outline"
+              className="flex-1 border-gray-200"
+              onClick={() => setStatusDialogOpen(false)}
+              disabled={isUpdatingStatus}
+            >
+              Cancel
+            </Button>
+            <Button
+              className={`flex-1 text-white ${
+                newStatus === "SUSPENDED"
+                  ? "bg-orange-600 hover:bg-orange-700"
+                  : "bg-green-600 hover:bg-green-700"
+              }`}
+              onClick={handleStatusUpdate}
+              disabled={isUpdatingStatus}
+            >
+              {isUpdatingStatus && (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              )}
+              {newStatus === "SUSPENDED" ? "Suspend" : "Activate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

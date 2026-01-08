@@ -276,6 +276,70 @@ class ApiService {
     });
   }
 
+  // Users API methods
+  async getUsers(options?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    role?: string;
+    status?: string;
+  }): Promise<{
+    users: User[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const params = new URLSearchParams();
+    if (options?.page) params.append("page", options.page.toString());
+    if (options?.limit) params.append("limit", options.limit.toString());
+    if (options?.search) params.append("search", options.search);
+    if (options?.role) params.append("role", options.role);
+    if (options?.status) params.append("status", options.status);
+
+    const query = params.toString() ? `?${params.toString()}` : "";
+    const response = await this.request<{
+      users: User[];
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    }>(`/users${query}`);
+    return response.data;
+  }
+
+  async getUserStats(): Promise<{
+    totalUsers: number;
+    activeUsers: number;
+    premiumUsers: number;
+    onboardedUsers: number;
+  }> {
+    const response = await this.request<{
+      totalUsers: number;
+      activeUsers: number;
+      premiumUsers: number;
+      onboardedUsers: number;
+    }>("/users/stats");
+    return response.data;
+  }
+
+  async updateUserStatus(
+    userId: string,
+    status: "ACTIVE" | "SUSPENDED" | "DELETED"
+  ): Promise<User> {
+    const response = await this.request<User>(`/users/${userId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+    return response.data;
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    await this.request(`/users/${userId}`, {
+      method: "DELETE",
+    });
+  }
+
   async updateInterests(
     categoryIds: string[],
     type: "INTEREST" | "SERVICE" = "INTEREST"

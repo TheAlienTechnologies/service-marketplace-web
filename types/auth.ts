@@ -8,8 +8,14 @@ export interface User {
   username?: string;
   avatar?: string;
   role: "USER" | "SERVICE_PROVIDER" | "ADMIN";
+  status?: "ACTIVE" | "SUSPENDED" | "DELETED";
+  phoneVerified?: boolean;
   hasCompletedOnboarding: boolean;
-  profileCompleteness: number;
+  profileCompleteness?: number;
+  isServiceProviderVerified?: boolean;
+  createdAt?: string;
+  lastLoginAt?: string;
+  lastActiveAt?: string;
 }
 
 export interface AuthState {
