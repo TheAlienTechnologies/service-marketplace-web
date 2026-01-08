@@ -12,16 +12,28 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, hasHydrated } = useAuthStore();
 
   useEffect(() => {
+    // Wait for hydration before checking auth
+    if (!hasHydrated) return;
+
     if (
       !isAuthenticated ||
       (user?.role !== "ADMIN" && user?.role !== "SERVICE_PROVIDER")
     ) {
       router.push("/");
     }
-  }, [isAuthenticated, user, router]);
+  }, [hasHydrated, isAuthenticated, user, router]);
+
+  // Show loading while hydrating
+  if (!hasHydrated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+      </div>
+    );
+  }
 
   if (
     !isAuthenticated ||

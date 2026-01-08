@@ -1,13 +1,25 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { AuthState, AuthStep, UserAuthStep, ProviderAuthStep, User, USER_AUTH_STEPS, PROVIDER_AUTH_STEPS } from '@/types/auth';
-import { apiService } from '@/lib/api';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import {
+  AuthState,
+  AuthStep,
+  UserAuthStep,
+  ProviderAuthStep,
+  User,
+  USER_AUTH_STEPS,
+  PROVIDER_AUTH_STEPS,
+} from "@/types/auth";
+import { apiService } from "@/lib/api";
 
 interface AuthStore extends AuthState {
+  // Hydration state
+  hasHydrated: boolean;
+  setHasHydrated: (state: boolean) => void;
+
   // Forgot password flow state
   forgotPasswordEmail: string | null;
   forgotPasswordOtp: string | null;
-  
+
   // Actions
   setUser: (user: User | null) => void;
   setLoading: (loading: boolean) => void;
@@ -22,7 +34,7 @@ interface AuthStore extends AuthState {
   setForgotPasswordOtp: (otp: string | null) => void;
   clearForgotPasswordState: () => void;
   signOut: () => void;
-  
+
   // Flow-specific navigation methods
   nextUserStep: () => void;
   nextProviderStep: () => void;
@@ -32,84 +44,93 @@ interface AuthStore extends AuthState {
 
 export const useAuthStore = create<AuthStore>()(
   persist(
-    (set, get) => (
-      
-      
-      {
+    (set, get) => ({
       // Initial state
       user: null,
       isAuthenticated: false,
       isLoading: false,
       showAuthModal: false,
-      authStep: 'signin',
-      userAuthStep: 'signup',
-      providerAuthStep: 'provider-signup',
-      authFlow: 'user',
+      authStep: "signin",
+      userAuthStep: "signup",
+      providerAuthStep: "provider-signup",
+      authFlow: "user",
       forgotPasswordEmail: null,
       forgotPasswordOtp: null,
+      hasHydrated: false,
+
+      setHasHydrated: (state) => set({ hasHydrated: state }),
 
       // Actions
-      setUser: (user) => set({ 
-        user, 
-        isAuthenticated: !!user 
-      }),
+      setUser: (user) =>
+        set({
+          user,
+          isAuthenticated: !!user,
+        }),
 
       setLoading: (isLoading) => set({ isLoading }),
 
-      showAuth: (step = 'signin') => set({ 
-        showAuthModal: true, 
-        authStep: step 
-      }),
+      showAuth: (step = "signin") =>
+        set({
+          showAuthModal: true,
+          authStep: step,
+        }),
 
-      hideAuth: () => set({ 
-        showAuthModal: false 
-      }),
+      hideAuth: () =>
+        set({
+          showAuthModal: false,
+        }),
 
       setAuthStep: (authStep) => set({ authStep }),
 
-      setUserAuthStep: (userAuthStep) => set({ 
-        userAuthStep, 
-        authFlow: 'user',
-        authStep: 'signup',
-        showAuthModal: true 
-      }),
+      setUserAuthStep: (userAuthStep) =>
+        set({
+          userAuthStep,
+          authFlow: "user",
+          authStep: "signup",
+          showAuthModal: true,
+        }),
 
-      setProviderAuthStep: (providerAuthStep) => set({ 
-        providerAuthStep, 
-        authFlow: 'provider',
-        authStep: 'signup',
-        showAuthModal: true 
-      }),
+      setProviderAuthStep: (providerAuthStep) =>
+        set({
+          providerAuthStep,
+          authFlow: "provider",
+          authStep: "signup",
+          showAuthModal: true,
+        }),
 
-      startUserFlow: () => set({ 
-        authFlow: 'user',
-        userAuthStep: 'signup',
-        showAuthModal: true 
-      }),
+      startUserFlow: () =>
+        set({
+          authFlow: "user",
+          userAuthStep: "signup",
+          showAuthModal: true,
+        }),
 
-      startProviderFlow: () => set({ 
-        authFlow: 'provider',
-        providerAuthStep: 'provider-signup',
-        showAuthModal: true 
-      }),
+      startProviderFlow: () =>
+        set({
+          authFlow: "provider",
+          providerAuthStep: "provider-signup",
+          showAuthModal: true,
+        }),
 
-      setForgotPasswordEmail: (forgotPasswordEmail) => set({ forgotPasswordEmail }),
+      setForgotPasswordEmail: (forgotPasswordEmail) =>
+        set({ forgotPasswordEmail }),
 
       setForgotPasswordOtp: (forgotPasswordOtp) => set({ forgotPasswordOtp }),
 
-      clearForgotPasswordState: () => set({ 
-        forgotPasswordEmail: null, 
-        forgotPasswordOtp: null 
-      }),
+      clearForgotPasswordState: () =>
+        set({
+          forgotPasswordEmail: null,
+          forgotPasswordOtp: null,
+        }),
 
       signOut: async () => {
         await apiService.signOut();
-        set({ 
-          user: null, 
+        set({
+          user: null,
           isAuthenticated: false,
           showAuthModal: false,
           forgotPasswordEmail: null,
-          forgotPasswordOtp: null
+          forgotPasswordOtp: null,
         });
       },
 
@@ -119,7 +140,11 @@ export const useAuthStore = create<AuthStore>()(
         const currentIndex = USER_AUTH_STEPS.indexOf(userAuthStep);
         if (currentIndex < USER_AUTH_STEPS.length - 1) {
           const nextStep = USER_AUTH_STEPS[currentIndex + 1];
-          set({ userAuthStep: nextStep, authFlow: 'user', showAuthModal: true });
+          set({
+            userAuthStep: nextStep,
+            authFlow: "user",
+            showAuthModal: true,
+          });
         }
       },
 
@@ -128,7 +153,11 @@ export const useAuthStore = create<AuthStore>()(
         const currentIndex = PROVIDER_AUTH_STEPS.indexOf(providerAuthStep);
         if (currentIndex < PROVIDER_AUTH_STEPS.length - 1) {
           const nextStep = PROVIDER_AUTH_STEPS[currentIndex + 1];
-          set({ providerAuthStep: nextStep, authFlow: 'provider', showAuthModal: true });
+          set({
+            providerAuthStep: nextStep,
+            authFlow: "provider",
+            showAuthModal: true,
+          });
         }
       },
 
@@ -137,7 +166,11 @@ export const useAuthStore = create<AuthStore>()(
         const currentIndex = USER_AUTH_STEPS.indexOf(userAuthStep);
         if (currentIndex > 0) {
           const previousStep = USER_AUTH_STEPS[currentIndex - 1];
-          set({ userAuthStep: previousStep, authFlow: 'user', showAuthModal: true });
+          set({
+            userAuthStep: previousStep,
+            authFlow: "user",
+            showAuthModal: true,
+          });
         }
       },
 
@@ -146,21 +179,23 @@ export const useAuthStore = create<AuthStore>()(
         const currentIndex = PROVIDER_AUTH_STEPS.indexOf(providerAuthStep);
         if (currentIndex > 0) {
           const previousStep = PROVIDER_AUTH_STEPS[currentIndex - 1];
-          set({ providerAuthStep: previousStep, authFlow: 'provider', showAuthModal: true });
+          set({
+            providerAuthStep: previousStep,
+            authFlow: "provider",
+            showAuthModal: true,
+          });
         }
       },
-    }
-  
-  
-  
-  
-  ),
+    }),
     {
-      name: 'auth-storage',
-      partialize: (state) => ({ 
-        user: state.user, 
-        isAuthenticated: state.isAuthenticated 
+      name: "auth-storage",
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );
