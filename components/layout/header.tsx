@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Search,
-  ChevronDown,
-  Globe,
-  Bell,
-  Mail,
-  ShoppingBag,
-} from "lucide-react";
+import { ChevronDown, Globe, Bell, Mail, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,16 +11,15 @@ import {
 import { useAuthStore } from "@/store/auth-store";
 import Image from "next/image";
 import { Logo } from "./logo";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { useRouter } from "next/navigation";
+import { useCategories } from "@/store/categories-store";
 
 export function Header() {
-  const {
-    isAuthenticated,
-    user,
-    showAuth,
-    signOut,
-    startUserFlow,
-    startProviderFlow,
-  } = useAuthStore();
+  const router = useRouter();
+  const { isAuthenticated, user, showAuth, signOut, startUserFlow } =
+    useAuthStore();
+  const { topLevelCategories, isLoading: categoriesLoading } = useCategories();
 
   return (
     <header className="bg-white border-b border-gray-200">
@@ -47,21 +39,24 @@ export function Header() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-48">
-                <DropdownMenuItem>
-                  <span>Graphics & Design</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <span>Digital Marketing</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <span>Writing & Translation</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <span>Video & Animation</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <span>Programming & Tech</span>
-                </DropdownMenuItem>
+                {categoriesLoading ? (
+                  <DropdownMenuItem disabled>
+                    <span className="text-gray-400">Loading...</span>
+                  </DropdownMenuItem>
+                ) : topLevelCategories.length > 0 ? (
+                  topLevelCategories.map((category) => (
+                    <DropdownMenuItem
+                      key={category.id}
+                      onClick={() => router.push(`/categories/${category.id}`)}
+                    >
+                      <span>{category.name}</span>
+                    </DropdownMenuItem>
+                  ))
+                ) : (
+                  <DropdownMenuItem disabled>
+                    <span className="text-gray-400">No categories</span>
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -91,6 +86,10 @@ export function Header() {
 
             {/* Divider */}
             <div className="h-6 w-px bg-gray-300"></div>
+
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
             {/* Language Selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -156,18 +155,34 @@ export function Header() {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem>
-                    <span>My Profile</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <span>My Orders</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <span>Settings</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={signOut}>
-                    <span>Sign Out</span>
-                  </DropdownMenuItem>
+                  {user?.role === "ADMIN" ||
+                  user?.role === "SERVICE_PROVIDER" ? (
+                    <>
+                      <DropdownMenuItem
+                        onClick={() => router.push("/dashboard")}
+                      >
+                        <span>Dashboard</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={signOut}>
+                        <span>Sign Out</span>
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
+                    <>
+                      <DropdownMenuItem>
+                        <span>My Profile</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => router.push("/orders")}>
+                        <span>My Orders</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <span>Settings</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={signOut}>
+                        <span>Sign Out</span>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (

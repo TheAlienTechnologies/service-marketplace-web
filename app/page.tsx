@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { HomeHeader } from "@/components/layout/home-header";
 import { Footer } from "@/components/layout/footer";
 import { HeroSection } from "@/components/sections/hero-section";
@@ -10,16 +9,35 @@ import { MomentsSection } from "@/components/sections/home/moments-section";
 import { HowItWorksSection } from "@/components/sections/home/how-it-works-section";
 import { GetInspiredSection } from "@/components/sections/home/get-inspired-section";
 import { AppDownloadSection } from "@/components/sections/home/app-download-section";
-import { AuthModal } from "@/components/auth/auth-modal";
 import { useAuthStore } from "@/store/auth-store";
-import { mockServices, mockServiceCategories } from "@/lib/mock-data";
 import { mockBestsellers, mockMostViewed } from "@/lib/mock-bestsellers";
-import { mockPopularCategories } from "@/lib/mock-categories";
 import { mockInspirations } from "@/lib/mock-inspirations";
-import { Star, MapPin } from "lucide-react";
+import { useCategories } from "@/store/categories-store";
+import { CategoryCardData } from "@/components/sections/cards/category-card";
+import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const { showAuth } = useAuthStore();
+  const router = useRouter();
+  const { featuredCategories, topLevelCategories, isLoading } = useCategories();
+
+  // Transform API categories to CategoryCardData format
+  const categoryCardData: CategoryCardData[] = useMemo(() => {
+    // Use featured categories if available, otherwise use top-level
+    const categoriesToShow =
+      featuredCategories.length > 0 ? featuredCategories : topLevelCategories;
+
+    return categoriesToShow.map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      image: cat.imageUrl || "/assets/temp/products/p1.jpg", // Fallback image
+    }));
+  }, [featuredCategories, topLevelCategories]);
+
+  const handleCategoryClick = (category: CategoryCardData) => {
+    router.push(`/categories/${category.id}`);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -61,13 +79,13 @@ export default function Home() {
       <HowItWorksSection />
 
       {/* Popular Service Categories Carousel */}
-      <CategoryCarousel
-        categories={mockPopularCategories}
-        title="Popular Service"
-        onCategoryClick={(category) =>
-          console.log("Category clicked:", category.id)
-        }
-      />
+      {!isLoading && categoryCardData.length > 0 && (
+        <CategoryCarousel
+          categories={categoryCardData}
+          title="Popular Service"
+          onCategoryClick={handleCategoryClick}
+        />
+      )}
 
       {/* Get Inspired Section */}
       <GetInspiredSection inspirations={mockInspirations} />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, use } from "react";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { CategoryFilters } from "@/components/sections/category/category-filters";
@@ -16,11 +16,16 @@ import { mockInspirations } from "@/lib/mock-inspirations";
 
 const ITEMS_PER_PAGE = 12;
 
-export default function CategoryPage({ params }: { params: { slug: string } }) {
+export default function CategoryPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const [currentPage, setCurrentPage] = useState(1);
+  const { slug } = use(params);
 
   // Format the category name for display
-  const categoryName = params.slug
+  const categoryName = slug
     .replace(/-/g, " ")
     .replace(/\b\w/g, (l) => l.toUpperCase());
 

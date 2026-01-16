@@ -2,6 +2,7 @@
 
 import { X, Check, ChevronUp, ChevronDown } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface AddOn {
   id: string;
@@ -47,6 +48,7 @@ export function CheckoutModal({
   onClose,
   selectedPlan,
 }: CheckoutModalProps) {
+  const router = useRouter();
   const [selectedAddOns, setSelectedAddOns] = useState<Set<string>>(new Set());
   const [isAddOnsExpanded, setIsAddOnsExpanded] = useState(true);
 
@@ -74,13 +76,8 @@ export function CheckoutModal({
   };
 
   const handleContinue = () => {
-    // Handle payment with Paystack
-    console.log("Proceeding to payment:", {
-      plan: selectedPlan,
-      addOns: Array.from(selectedAddOns),
-      total: subtotal,
-    });
-    // Integrate Paystack here
+    // Navigate to payment page
+    router.push("/checkout");
   };
 
   return (
