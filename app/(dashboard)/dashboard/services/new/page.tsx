@@ -3,14 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  ChevronLeft,
-  Upload,
-  X,
-  Plus,
-  Trash2,
-  ChevronDown,
-} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ChevronLeft, Upload, X, Plus, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +17,9 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { apiService } from "@/lib/api";
+import { toast } from "react-toastify";
+import { useCategoriesStore } from "@/store/categories-store";
 
 type Plan = {
   id: string;
@@ -42,27 +39,36 @@ type Addon = {
 };
 
 export default function AddServicePage() {
+  const router = useRouter();
+  const { categories } = useCategoriesStore();
+
+  // Service data state
+  const [title, setTitle] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [overview, setOverview] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState("");
+
+  // File uploads
+  const [coverImage, setCoverImage] = useState<File | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string>("");
+  const [portfolioImages, setPortfolioImages] = useState<File[]>([]);
+
+  // Loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [plans, setPlans] = useState<Plan[]>([
     {
       id: "1",
-      title: "Basic plan",
-      price: "250.00",
-      inclusions:
-        "1-hour consultation (virtual or in-person)\nQuick recommendations / advice\nNo revisions included\nDelivery within 1-2 days",
+      title: "",
+      price: "",
+      inclusions: "",
       isPopular: false,
       isExpanded: true,
     },
   ]);
 
-  const [addons, setAddons] = useState<Addon[]>([
-    {
-      id: "1",
-      title: "Site Visit & Consultation",
-      description: "On-location inspection before design begins",
-      price: "100.00",
-      isSelected: false,
-    },
-  ]);
+  const [addons, setAddons] = useState<Addon[]>([]);
 
   const [showAddons, setShowAddons] = useState(true);
 
@@ -77,18 +83,37 @@ export default function AddServicePage() {
   };
 
   const addPlan = () => {
+    if (plans.length >= 5) {
+      toast.error("Maximum 5 pricing plans allowed");
+      return;
+    }
     const newId = (plans.length + 1).toString();
     setPlans([
       ...plans.map((p) => ({ ...p, isExpanded: false })), // Collapse others
       {
         id: newId,
-        title: "New plan",
+        title: "",
         price: "",
         inclusions: "",
         isPopular: false,
         isExpanded: true,
       },
     ]);
+  };
+
+  const removePlan = (id: string) => {
+    if (plans.length <= 1) {
+      toast.error("You must have at least one pricing plan");
+      return;
+    }
+    const updatedPlans = plans.filter((p) => p.id !== id);
+    // If the deleted plan was expanded, expand the first plan
+    const deletedPlan = plans.find((p) => p.id === id);
+    if (deletedPlan?.isExpanded && updatedPlans.length > 0) {
+      updatedPlans[0].isExpanded = true;
+    }
+    setPlans(updatedPlans);
+    toast.success("Plan removed successfully");
   };
 
   const updateAddon = (id: string, field: keyof Addon, value: any) => {
@@ -111,6 +136,125 @@ export default function AddServicePage() {
 
   const removeAddon = (id: string) => {
     setAddons(addons.filter((a) => a.id !== id));
+  };
+
+  // File upload handlers
+  const handleCoverImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCoverImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCoverImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Tag management
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter((tag) => tag !== tagToRemove));
+  };
+
+  const addTag = () => {
+    if (newTag.trim() && !tags.includes(newTag.trim())) {
+      setTags([...tags, newTag.trim()]);
+      setNewTag("");
+    }
+  };
+
+  // Submit handler
+  const handleSubmit = async (status: "DRAFT" | "PUBLISHED") => {
+    // Validation
+    if (!title.trim()) {
+      toast.error("Please enter a service title");
+      return;
+    }
+    if (!categoryId) {
+      toast.error("Please select a category");
+      return;
+    }
+    if (!overview.trim()) {
+      toast.error("Please enter an overview");
+      return;
+    }
+    if (plans.length === 0) {
+      toast.error("Please add at least one pricing plan");
+      return;
+    }
+
+    // Check if all plans have required fields
+    for (let i = 0; i < plans.length; i++) {
+      const plan = plans[i];
+      if (!plan.title.trim()) {
+        toast.error(`Plan ${i + 1}: Please add a plan title`);
+        return;
+      }
+      if (!plan.price || Number.parseFloat(plan.price) <= 0) {
+        toast.error(
+          `Plan ${i + 1} ("${plan.title}"): Please add a valid price`
+        );
+        return;
+      }
+      if (!plan.inclusions.trim()) {
+        toast.error(
+          `Plan ${i + 1} ("${
+            plan.title
+          }"): Please add plan inclusions (what's included)`
+        );
+        return;
+      }
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      // Prepare data
+      const serviceData = {
+        title,
+        categoryId,
+        overview,
+        tags,
+        plans: plans.map((plan, index) => ({
+          title: plan.title,
+          price: Number.parseFloat(plan.price),
+          inclusions: plan.inclusions,
+          isPopular: plan.isPopular,
+          sortOrder: index,
+        })),
+        addons: showAddons
+          ? addons
+              .filter((addon) => addon.title.trim() && addon.price)
+              .map((addon) => ({
+                title: addon.title,
+                description: addon.description,
+                price: Number.parseFloat(addon.price),
+              }))
+          : [],
+      };
+
+      // Create service
+      const service = await apiService.createService(
+        serviceData,
+        coverImage || undefined
+      );
+
+      toast.success("Service created successfully!");
+
+      // If user wants to publish, update status
+      if (status === "PUBLISHED") {
+        await apiService.updateServiceStatus(service.id, "PUBLISHED");
+        toast.success("Service published!");
+      }
+
+      // Redirect to services list
+      router.push("/dashboard/services");
+    } catch (error: any) {
+      console.error("Error creating service:", error);
+      toast.error(error?.message || "Failed to create service");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -150,24 +294,47 @@ export default function AddServicePage() {
             >
               Cover image
             </span>
-            <button
-              type="button"
+            <input
+              type="file"
+              id="cover-image-input"
+              accept="image/*"
+              className="hidden"
+              onChange={handleCoverImageChange}
+            />
+            <label
+              htmlFor="cover-image-input"
               aria-labelledby="cover-image-label"
-              className="relative w-full aspect-[2/1] rounded-xl overflow-hidden bg-gray-100 border-2 border-dashed border-gray-300 group cursor-pointer hover:bg-gray-50 transition-colors p-0 text-left"
+              className="relative w-full aspect-[2/1] rounded-xl overflow-hidden bg-gray-100 border-2 border-dashed border-gray-300 group cursor-pointer hover:bg-gray-50 transition-colors block"
             >
-              <Image
-                src="https://images.unsplash.com/photo-1600607686527-6fb886090705?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-                alt="Cover"
-                fill
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                <div className="bg-white/90 backdrop-blur rounded-lg px-4 py-2 text-sm font-medium text-gray-900 flex items-center gap-2">
-                  <Upload className="w-4 h-4" />
-                  Change Image
+              {coverImagePreview ? (
+                <>
+                  <Image
+                    src={coverImagePreview}
+                    alt="Cover"
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                    <div className="bg-white/90 backdrop-blur rounded-lg px-4 py-2 text-sm font-medium text-gray-900 flex items-center gap-2">
+                      <Upload className="w-4 h-4" />
+                      Change Image
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center mb-3">
+                    <Upload className="w-6 h-6 text-gray-400" />
+                  </div>
+                  <p className="text-sm font-medium text-gray-700">
+                    Click to upload cover image
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    JPG, PNG (max. 5MB)
+                  </p>
                 </div>
-              </div>
-            </button>
+              )}
+            </label>
           </div>
 
           {/* General Details */}
@@ -185,7 +352,8 @@ export default function AddServicePage() {
               </label>
               <Input
                 id="title"
-                defaultValue="Architecture & Interior Designer"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 className="bg-white"
               />
             </div>
@@ -197,20 +365,20 @@ export default function AddServicePage() {
               >
                 Service category
               </label>
-              <Select defaultValue="design">
+              <Select value={categoryId} onValueChange={setCategoryId}>
                 <SelectTrigger id="category-select" className="bg-white">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="design">
-                    Architect & Interior Designer
-                  </SelectItem>
-                  <SelectItem value="home">Home Decor</SelectItem>
-                  <SelectItem value="garden">Garden & Landscaping</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-500">
-                This is a hint text to help user.
+                Choose the category that best describes your service.
               </p>
             </div>
 
@@ -224,38 +392,54 @@ export default function AddServicePage() {
               <Textarea
                 id="overview"
                 className="min-h-[200px] bg-white leading-relaxed resize-none"
-                defaultValue="Modern architectural design featuring futuristic curves and glass façades. Expert services in architectural planning, 3D modeling, and conceptual design to bring your building vision to life.
-Beyond the aesthetics, I ensure that every design meets structural integrity, sustainability, and functionality standards. From initial sketches to detailed 3D models, my process is collaborative — keeping you involved at every stage to align with your goals and budget.
-Whether it's residential housing, commercial buildings, or public spaces, I deliver innovative designs tailored to your unique requirements. My focus is on creating environments that not only look exceptional but also enhance comfort, usability, and long-term value.
-Let's work together to transform your concept into a space that inspires and endures."
+                value={overview}
+                onChange={(e) => setOverview(e.target.value)}
+                maxLength={500}
               />
               <div className="flex justify-end">
-                <span className="text-xs text-gray-400">0/500</span>
+                <span className="text-xs text-gray-400">
+                  {overview.length}/500
+                </span>
               </div>
             </div>
 
             <div className="space-y-2">
               <span className="text-sm font-medium text-gray-700">Tags</span>
               <div className="flex flex-wrap gap-2">
-                {["Interior design", "Design", "Architecture", "Branding"].map(
-                  (tag) => (
-                    <div
-                      key={tag}
-                      className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 group cursor-default"
+                {tags.map((tag) => (
+                  <div
+                    key={tag}
+                    className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 group cursor-default"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="hidden group-hover:block hover:text-red-600"
+                      aria-label={`Remove tag ${tag}`}
                     >
-                      {tag}
-                      <button
-                        className="hidden group-hover:block hover:text-red-600"
-                        aria-label={`Remove tag ${tag}`}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  )
-                )}
-                <button className="text-xs text-gray-500 hover:text-gray-900 border border-dashed border-gray-300 rounded-full px-3 py-1 flex items-center gap-1 hover:border-gray-400 transition-colors">
-                  <Plus className="w-3 h-3" /> Add tag
-                </button>
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && (e.preventDefault(), addTag())
+                    }
+                    placeholder="Add tag..."
+                    className="text-xs h-7 w-24"
+                  />
+                  <button
+                    type="button"
+                    onClick={addTag}
+                    className="text-xs text-gray-500 hover:text-gray-900 border border-dashed border-gray-300 rounded-full px-3 py-1 flex items-center gap-1 hover:border-gray-400 transition-colors"
+                  >
+                    <Plus className="w-3 h-3" /> Add
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -321,8 +505,29 @@ Let's work together to transform your concept into a space that inspires and end
               </h2>
               <p className="text-sm text-gray-500">
                 Break down your service into simple, clear plans that showcase
-                your value.
+                your value. (Max 5 plans)
               </p>
+            </div>
+
+            {/* Suggested Examples */}
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-xs font-medium text-blue-900 mb-2">
+                💡 Suggested plan names:
+              </p>
+              <div className="flex flex-wrap gap-2 text-xs text-blue-700">
+                <span className="bg-white px-2 py-1 rounded">
+                  Basic / Standard / Premium
+                </span>
+                <span className="bg-white px-2 py-1 rounded">
+                  Starter / Professional / Enterprise
+                </span>
+                <span className="bg-white px-2 py-1 rounded">
+                  Bronze / Silver / Gold
+                </span>
+                <span className="bg-white px-2 py-1 rounded">
+                  Quick / Standard / Deluxe
+                </span>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -418,7 +623,17 @@ Let's work together to transform your concept into a space that inspires and end
                             updatePlan(plan.id, "title", e.target.value)
                           }
                           className="bg-white"
+                          placeholder="e.g., Basic Plan, Quick Service, Starter Package"
+                          maxLength={50}
                         />
+                        <div className="flex justify-between">
+                          <span className="text-xs text-gray-400">
+                            Use clear, descriptive names
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {plan.title.length}/50
+                          </span>
+                        </div>
                       </div>
 
                       <div className="space-y-2">
@@ -431,7 +646,7 @@ Let's work together to transform your concept into a space that inspires and end
                         <div className="relative">
                           <div className="absolute left-0 top-0 bottom-0 px-3 bg-gray-50 border-r border-gray-200 rounded-l-md flex items-center">
                             <span className="text-sm font-medium text-gray-600 flex items-center gap-1">
-                              GHS <ChevronDown className="w-3 h-3" />
+                              GHS
                             </span>
                           </div>
                           <Input
@@ -442,6 +657,9 @@ Let's work together to transform your concept into a space that inspires and end
                             }
                             className="pl-20 bg-white"
                             type="number"
+                            placeholder="50.00"
+                            min="0"
+                            step="0.01"
                           />
                         </div>
                       </div>
@@ -460,14 +678,23 @@ Let's work together to transform your concept into a space that inspires and end
                             updatePlan(plan.id, "inclusions", e.target.value)
                           }
                           className="min-h-[120px] bg-white resize-none text-sm"
-                          placeholder="• Item 1&#10;• Item 2"
+                          placeholder="• 1-hour consultation\n• 2 revisions included\n• Delivery within 3 days\n• Email support"
                         />
                         <p className="text-xs text-gray-400">
-                          Press enter to create the next bullet
+                          List what's included in this plan (one item per line)
                         </p>
                       </div>
 
                       <div className="flex items-center gap-3 pt-2">
+                        {plans.length > 1 && (
+                          <Button
+                            variant="outline"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                            onClick={() => removePlan(plan.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           className="flex-1"
@@ -489,9 +716,18 @@ Let's work together to transform your concept into a space that inspires and end
 
               <button
                 onClick={addPlan}
-                className="flex items-center gap-2 text-sm font-medium text-[#15803d] hover:text-[#14532d] transition-colors pl-1"
+                disabled={plans.length >= 5}
+                className={cn(
+                  "flex items-center gap-2 text-sm font-medium transition-colors pl-1",
+                  plans.length >= 5
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-[#15803d] hover:text-[#14532d] cursor-pointer"
+                )}
               >
-                <Plus className="w-4 h-4" /> Add another plan
+                <Plus className="w-4 h-4" />
+                {plans.length >= 5
+                  ? "Maximum plans reached"
+                  : "Add another plan"}
               </button>
             </div>
           </div>
@@ -541,6 +777,7 @@ Let's work together to transform your concept into a space that inspires and end
                           updateAddon(addon.id, "title", e.target.value)
                         }
                         className="bg-white"
+                        placeholder="e.g., Express Delivery, Extra Revision, Priority Support"
                       />
                     </div>
 
@@ -561,6 +798,7 @@ Let's work together to transform your concept into a space that inspires and end
                           updateAddon(addon.id, "description", e.target.value)
                         }
                         className="bg-white"
+                        placeholder="Brief description of what this add-on provides"
                       />
                     </div>
 
@@ -574,7 +812,7 @@ Let's work together to transform your concept into a space that inspires and end
                       <div className="relative">
                         <div className="absolute left-0 top-0 bottom-0 px-3 bg-gray-50 border-r border-gray-200 rounded-l-md flex items-center">
                           <span className="text-sm font-medium text-gray-600 flex items-center gap-1">
-                            GHS <ChevronDown className="w-3 h-3" />
+                            GHS
                           </span>
                         </div>
                         <Input
@@ -585,6 +823,9 @@ Let's work together to transform your concept into a space that inspires and end
                           }
                           className="pl-20 bg-white"
                           type="number"
+                          placeholder="25.00"
+                          min="0"
+                          step="0.01"
                         />
                       </div>
                     </div>
@@ -618,11 +859,31 @@ Let's work together to transform your concept into a space that inspires and end
             <Button
               variant="outline"
               className="w-full py-6 text-base font-medium"
+              onClick={() => handleSubmit("DRAFT")}
+              disabled={isSubmitting}
             >
-              Save as draft
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Saving...
+                </>
+              ) : (
+                "Save as draft"
+              )}
             </Button>
-            <Button className="w-full py-6 text-base font-medium bg-[#15803d] hover:bg-[#14532d] text-white">
-              Preview & Publish
+            <Button
+              className="w-full py-6 text-base font-medium bg-[#15803d] hover:bg-[#14532d] text-white"
+              onClick={() => handleSubmit("PUBLISHED")}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Publishing...
+                </>
+              ) : (
+                "Preview & Publish"
+              )}
             </Button>
           </div>
         </div>

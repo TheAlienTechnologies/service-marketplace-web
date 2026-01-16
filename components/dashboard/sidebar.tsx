@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Users,
   Box,
+  Layers,
   ShoppingBag,
   Scale,
   Settings,
@@ -62,7 +63,12 @@ const adminSidebarItems: SidebarGroup[] = [
       },
       {
         icon: Box,
-        label: "Services & Categories",
+        label: "Services",
+        href: "/dashboard/services",
+      },
+      {
+        icon: Layers,
+        label: "Categories",
         href: "/dashboard/categories",
       },
       {

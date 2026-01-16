@@ -5,6 +5,7 @@ import {
   OnboardingStatus,
   Category,
 } from "@/types/auth";
+import { Service, ServiceStatus, CreateServiceData } from "@/types/service";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
@@ -336,6 +337,203 @@ class ApiService {
 
   async deleteUser(userId: string): Promise<void> {
     await this.request(`/users/${userId}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Services API methods
+  async createService(
+    data: CreateServiceData,
+    coverImage?: File
+  ): Promise<Service> {
+    const formData = new FormData();
+
+    // Add service data as JSON
+    formData.append("title", data.title);
+    formData.append("categoryId", data.categoryId);
+    formData.append("overview", data.overview);
+
+    if (data.tags && data.tags.length > 0) {
+      data.tags.forEach((tag) => formData.append("tags[]", tag));
+    }
+
+    // Add plans
+    formData.append("plans", JSON.stringify(data.plans));
+
+    // Add addons if present
+    if (data.addons && data.addons.length > 0) {
+      formData.append("addons", JSON.stringify(data.addons));
+    }
+
+    // Add cover image if present
+    if (coverImage) {
+      formData.append("coverImage", coverImage);
+    }
+
+    const response = await this.request<Service>("/services", {
+      method: "POST",
+      body: formData,
+      headers: {
+        // Remove Content-Type header to let browser set it with boundary
+      },
+    });
+    return response.data;
+  }
+
+  async getServices(options?: {
+    status?: ServiceStatus;
+    categoryId?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    services: Service[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const params = new URLSearchParams();
+    if (options?.status) params.append("status", options.status);
+    if (options?.categoryId) params.append("categoryId", options.categoryId);
+    if (options?.page) params.append("page", options.page.toString());
+    if (options?.limit) params.append("limit", options.limit.toString());
+
+    const query = params.toString() ? `?${params.toString()}` : "";
+    const response = await this.request<{
+      services: Service[];
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    }>(`/services${query}`);
+    return response.data;
+  }
+
+  async getMyServices(options?: {
+    status?: ServiceStatus;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    services: Service[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const params = new URLSearchParams();
+    if (options?.status) params.append("status", options.status);
+    if (options?.page) params.append("page", options.page.toString());
+    if (options?.limit) params.append("limit", options.limit.toString());
+
+    const query = params.toString() ? `?${params.toString()}` : "";
+    const response = await this.request<{
+      services: Service[];
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    }>(`/services/my${query}`);
+    return response.data;
+  }
+
+  async getAdminServices(options?: {
+    status?: ServiceStatus;
+    categoryId?: string;
+    providerId?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    services: Service[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const params = new URLSearchParams();
+    if (options?.status) params.append("status", options.status);
+    if (options?.categoryId) params.append("categoryId", options.categoryId);
+    if (options?.providerId) params.append("providerId", options.providerId);
+    if (options?.page) params.append("page", options.page.toString());
+    if (options?.limit) params.append("limit", options.limit.toString());
+
+    const query = params.toString() ? `?${params.toString()}` : "";
+    const response = await this.request<{
+      services: Service[];
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    }>(`/services/admin/all${query}`);
+    return response.data;
+  }
+
+  async getService(id: string): Promise<Service> {
+    const response = await this.request<Service>(`/services/${id}`);
+    return response.data;
+  }
+
+  async updateService(
+    id: string,
+    data: Partial<CreateServiceData>,
+    coverImage?: File
+  ): Promise<Service> {
+    const formData = new FormData();
+
+    if (data.title) formData.append("title", data.title);
+    if (data.categoryId) formData.append("categoryId", data.categoryId);
+    if (data.overview) formData.append("overview", data.overview);
+    if (data.tags) {
+      data.tags.forEach((tag) => formData.append("tags[]", tag));
+    }
+    if (data.plans) {
+      formData.append("plans", JSON.stringify(data.plans));
+    }
+    if (data.addons) {
+      formData.append("addons", JSON.stringify(data.addons));
+    }
+    if (coverImage) {
+      formData.append("coverImage", coverImage);
+    }
+
+    const response = await this.request<Service>(`/services/${id}`, {
+      method: "PUT",
+      body: formData,
+      headers: {},
+    });
+    return response.data;
+  }
+
+  async updateServiceStatus(
+    id: string,
+    status: ServiceStatus
+  ): Promise<Service> {
+    const response = await this.request<Service>(`/services/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+    return response.data;
+  }
+
+  async deleteService(id: string): Promise<void> {
+    await this.request(`/services/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async uploadServiceImages(id: string, images: File[]): Promise<Service> {
+    const formData = new FormData();
+    images.forEach((image) => formData.append("images", image));
+
+    const response = await this.request<Service>(`/services/${id}/images`, {
+      method: "POST",
+      body: formData,
+      headers: {},
+    });
+    return response.data;
+  }
+
+  async deleteServiceImage(serviceId: string, imageId: string): Promise<void> {
+    await this.request(`/services/${serviceId}/images/${imageId}`, {
       method: "DELETE",
     });
   }

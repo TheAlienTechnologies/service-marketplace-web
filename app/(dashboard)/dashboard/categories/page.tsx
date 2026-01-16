@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+
 import {
   useReactTable,
   getCoreRowModel,
@@ -12,6 +12,7 @@ import {
   createColumnHelper,
   SortingState,
   ColumnDef,
+  PaginationState,
 } from "@tanstack/react-table";
 import {
   Search,
@@ -20,8 +21,6 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  Download,
-  Star,
   Upload,
   Loader2,
 } from "lucide-react";
@@ -68,63 +67,15 @@ type CategoryTableRow = {
   createdAt: string;
 };
 
-type Service = {
-  id: number;
-  title: string;
-  category: string;
-  provider: {
-    name: string;
-    avatar: string;
-  };
-  orders: number;
-  status: "Active" | "Suspended" | "Pending";
-  rating: number;
-  joinedAt: string;
-};
-
-// Mock services data (services remain mock for now)
-const mockServices: Service[] = [
-  {
-    id: 1,
-    title: "Plumbing Installation & Repai...",
-    category: "Plumbing",
-    provider: {
-      name: "Olivia Rhye",
-      avatar:
-        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    },
-    orders: 7,
-    status: "Active",
-    rating: 4.8,
-    joinedAt: "15 Mar, 2025",
-  },
-  {
-    id: 2,
-    title: "Electrical Wiring & Home Safe...",
-    category: "Electrical Services",
-    provider: {
-      name: "Phoenix Baker",
-      avatar:
-        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-    },
-    orders: 1,
-    status: "Active",
-    rating: 4.8,
-    joinedAt: "10 Aug, 2025",
-  },
-];
-
 // --- Column Helpers ---
 
 const categoryColumnHelper = createColumnHelper<CategoryTableRow>();
-const serviceColumnHelper = createColumnHelper<Service>();
 
 // --- Main Component ---
 
-const tabs = ["All Services", "Categories", "Featured"];
+const tabs = ["Categories", "Featured"];
 
 export default function CategoriesPage() {
-  const router = useRouter();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [activeTab, setActiveTab] = useState("Categories");
@@ -151,6 +102,12 @@ export default function CategoriesPage() {
   const invalidateGlobalCache = useCategoriesStore(
     (state) => state.invalidateCache
   );
+
+  const [categoriesPagination, setCategoriesPagination] =
+    useState<PaginationState>({
+      pageIndex: 0,
+      pageSize: 10,
+    });
 
   // Fetch categories
   const fetchCategories = async () => {
@@ -462,90 +419,10 @@ export default function CategoriesPage() {
     []
   );
 
-  const serviceColumns = [
-    serviceColumnHelper.accessor("title", {
-      header: "Service Title",
-      cell: (info) => (
-        <span className="font-medium text-gray-900">{info.getValue()}</span>
-      ),
-      size: 250,
-    }),
-    serviceColumnHelper.accessor("category", {
-      header: "Category",
-      cell: (info) => (
-        <span className="font-medium text-gray-900">{info.getValue()}</span>
-      ),
-    }),
-    serviceColumnHelper.accessor("provider", {
-      header: "Provider",
-      cell: (info) => (
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 relative">
-            <Image
-              src={info.row.original.provider.avatar}
-              alt={info.row.original.provider.name}
-              fill
-              className="object-cover"
-            />
-          </div>
-          <span className="font-medium text-gray-900">
-            {info.row.original.provider.name}
-          </span>
-        </div>
-      ),
-    }),
-    serviceColumnHelper.accessor("orders", {
-      header: "Orders",
-      cell: (info) => <span className="text-gray-600">{info.getValue()}</span>,
-    }),
-    serviceColumnHelper.accessor("status", {
-      header: "Status",
-      cell: (info) => {
-        const status = info.getValue();
-        let badgeStyles = "bg-gray-50 text-gray-700";
-        let dotStyles = "bg-gray-500";
-
-        if (status === "Active") {
-          badgeStyles = "bg-green-50 text-green-700";
-          dotStyles = "bg-green-500";
-        } else if (status === "Pending") {
-          badgeStyles = "bg-orange-50 text-orange-700";
-          dotStyles = "bg-orange-500";
-        }
-
-        return (
-          <div
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeStyles}`}
-          >
-            <span
-              className={`w-1.5 h-1.5 rounded-full mr-1.5 ${dotStyles}`}
-            ></span>
-            {status}
-          </div>
-        );
-      },
-    }),
-    serviceColumnHelper.accessor("rating", {
-      header: "Rating",
-      cell: (info) => (
-        <div className="flex items-center gap-1 text-gray-600">
-          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-          <span>{info.getValue()}</span>
-        </div>
-      ),
-    }),
-    serviceColumnHelper.accessor("joinedAt", {
-      header: "Date of Joining",
-      cell: (info) => <span className="text-gray-600">{info.getValue()}</span>,
-    }),
-  ];
-
   // --- Table Configuration ---
 
   const currentData = useMemo(() => {
     switch (activeTab) {
-      case "All Services":
-        return mockServices;
       case "Featured":
         return featuredCategories;
       case "Categories":
@@ -556,8 +433,6 @@ export default function CategoriesPage() {
 
   const currentColumns = useMemo(() => {
     switch (activeTab) {
-      case "All Services":
-        return serviceColumns;
       case "Featured":
         return featuredColumns;
       case "Categories":
@@ -568,7 +443,7 @@ export default function CategoriesPage() {
 
   const table = useReactTable({
     data: currentData,
-    columns: currentColumns as ColumnDef<CategoryTableRow | Service, unknown>[],
+    columns: currentColumns as ColumnDef<CategoryTableRow, unknown>[],
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -576,13 +451,14 @@ export default function CategoriesPage() {
     state: {
       sorting,
       globalFilter,
+      pagination: categoriesPagination,
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
+    onPaginationChange: setCategoriesPagination,
   });
 
   const getAddButtonText = () => {
-    if (activeTab === "All Services") return "Add Service";
     if (activeTab === "Featured") return "Add featured Item";
     return "Add new category";
   };
@@ -598,10 +474,10 @@ export default function CategoriesPage() {
       <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Service & Category Management
+            Category Management
           </h1>
           <p className="text-gray-500 mt-1">
-            Organize and oversee all marketplace services and categories.
+            Organize and oversee all marketplace categories.
           </p>
         </div>
 
@@ -633,34 +509,19 @@ export default function CategoriesPage() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <Input
-            placeholder={
-              activeTab === "All Services"
-                ? "Search by service title..."
-                : "Search by category name..."
-            }
+            placeholder={"Search by category name..."}
             className="pl-10 bg-white"
             value={globalFilter ?? ""}
             onChange={(e) => setGlobalFilter(e.target.value)}
           />
         </div>
         <div className="flex items-center gap-3">
-          {activeTab === "All Services" && (
-            <Button
-              variant="outline"
-              className="text-green-700 border-green-100 bg-green-50 hover:bg-green-100 gap-2"
-            >
-              <Download className="w-4 h-4" />
-              Export data
-            </Button>
-          )}
           <Button
             className="bg-green-700 hover:bg-green-800 text-white gap-2"
             onClick={() => {
               if (activeTab === "Categories") {
                 resetForm();
                 setIsAddCategoryOpen(true);
-              } else if (activeTab === "All Services") {
-                router.push("/dashboard/services/new");
               }
             }}
           >
@@ -671,7 +532,7 @@ export default function CategoriesPage() {
       </div>
 
       {/* Loading State */}
-      {isLoading && activeTab !== "All Services" ? (
+      {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-green-600" />
         </div>
