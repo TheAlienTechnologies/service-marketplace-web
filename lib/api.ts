@@ -228,11 +228,12 @@ class ApiService {
     return result.data;
   }
 
+  //************************************** */
   async chatBot(
       prompt: string,
       conversationId: string
   ): Promise<BotChatResponse> {
-    
+
     const data = {
       prompt,
       conversationId
@@ -260,6 +261,7 @@ class ApiService {
     return { message };
   }
 
+  //************************************** */
 
 
   async updateCategory(

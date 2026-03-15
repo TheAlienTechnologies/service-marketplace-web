@@ -19,11 +19,11 @@ interface ChatBoxProps {
 }
 
 const quickMessages = [
-  "How long would this project take to complete?",
-  "Hi, are you available to take on a project right now?",
-  "Can you share some recent projects you've worked on?",
-  "What's the earliest you can start?",
-  "Are you available on Weekends"
+  "Tell me about Pavodah",
+  "How can I make contact a provider?",
+  "Tell me how to make a dispute?",
+  "Where can I find pavodah office or number?",
+  "How do I make a report?"
 ];
 
 export function BotChatBox({
