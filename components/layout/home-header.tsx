@@ -21,15 +21,12 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCategories } from "@/store/categories-store";
-import { useState } from "react";
-import { BotChatBox } from "../botChat/bot-chat-box";
 
-interface BotProps {
-  botName: string,
-  botAvatar: string
-}
+import { useSupportChatStore } from "@/store/support-chat-store";
 
-export function HomeHeader({ botName = "AI Agent Kwadwo" , botAvatar} : BotProps) {
+export function HomeHeader() {
+  const openChat = useSupportChatStore((state)=> state.openChat);
+
   const router = useRouter();
   const {
     isAuthenticated,
@@ -40,11 +37,9 @@ export function HomeHeader({ botName = "AI Agent Kwadwo" , botAvatar} : BotProps
     startProviderFlow,
   } = useAuthStore();
   const { topLevelCategories, isLoading: categoriesLoading } = useCategories();
-  const [isChatOpen, setIsChatOpen] = useState(false)
 
   const handleChatOpen = () => {
-    setIsChatOpen(true);
-    console.log("ai bot btn click")
+    openChat();
   }
 
 
@@ -102,7 +97,6 @@ export function HomeHeader({ botName = "AI Agent Kwadwo" , botAvatar} : BotProps
                     <span>Help & Support</span>
                     <ChevronDown className="w-4 h-4" />
                   </button>
-                  {/* <button onClick={handleChatOpen}>contact AI support</button> */}
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-48">
                   <DropdownMenuItem>
@@ -184,7 +178,7 @@ export function HomeHeader({ botName = "AI Agent Kwadwo" , botAvatar} : BotProps
                       )}
                     </div>
                     <span className="text-sm font-medium text-gray-700">
-                      {user?.firstName || "User"}
+                      {user?.role === "SERVICE_PROVIDER" ? "Provider" : "User"}
                     </span>
                     <ChevronDown className="w-4 h-4 text-gray-500" />
                   </button>
@@ -280,7 +274,7 @@ export function HomeHeader({ botName = "AI Agent Kwadwo" , botAvatar} : BotProps
                   Sign in
                 </Button>
                 <Button
-                  onClick={startUserFlow}
+                  onClick={() => showAuth("signup")}
                   size="sm"
                   className="bg-green-600 hover:bg-green-700 text-white font-medium text-sm px-6 py-2 rounded-lg"
                 >
@@ -292,14 +286,7 @@ export function HomeHeader({ botName = "AI Agent Kwadwo" , botAvatar} : BotProps
         </div>
       </div>
     </header>
-
-      {/* Chat Box */}
-      <BotChatBox
-      isOpen={isChatOpen}
-      onClose={() => setIsChatOpen(false)}
-      botName={botName}
-      botAvatar={botAvatar}
-      />
     </>
+    
   );
 }
