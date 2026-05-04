@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useEffect } from "react";
 import { apiService } from "@/lib/api";
 import { Category } from "@/types/auth";
 
@@ -20,16 +21,16 @@ interface CategoriesStore extends CategoriesState {
   getCategoryById: (id: string) => Category | undefined;
 }
 
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 5 * 60 * 1000;// 5 minutes
 
-export const useCategoriesStore = create<CategoriesStore>()((set, get) => ({
+export const useCategoriesStore = create<CategoriesStore>((set, get) => ({
   // Initial state
   categories: [],
   isLoading: false,
   error: null,
   lastFetched: null,
 
-  // Computed getters
+// Computed getters
   featuredCategories: () => {
     return get().categories.filter((cat) => cat.featured);
   },
@@ -42,26 +43,36 @@ export const useCategoriesStore = create<CategoriesStore>()((set, get) => ({
   fetchCategories: async (force = false) => {
     const { lastFetched, isLoading } = get();
 
-    // Check cache validity
-    if (!force && lastFetched && Date.now() - lastFetched < CACHE_DURATION) {
+// Check cache validity
+    if (
+      !force &&
+      lastFetched &&
+      Date.now() - lastFetched < CACHE_DURATION
+    ) {
       return;
     }
-
-    // Prevent duplicate fetches
+// Prevent duplicate fetches
     if (isLoading) return;
 
     try {
-      set({ isLoading: true, error: null });
+      set({
+        isLoading: true,
+        error: null,
+      });
+
       const response = await apiService.getCategories();
       set({
-        categories: response.categories,
+        categories: response.categories ?? [],
         lastFetched: Date.now(),
         isLoading: false,
+        error: null,
       });
     } catch (err) {
       set({
         error:
-          err instanceof Error ? err.message : "Failed to fetch categories",
+          err instanceof Error
+            ? err.message
+            : "Failed to fetch categories",
         isLoading: false,
       });
     }
@@ -80,10 +91,12 @@ export const useCategoriesStore = create<CategoriesStore>()((set, get) => ({
 export function useCategories() {
   const store = useCategoriesStore();
 
-  // Auto-fetch on first access
-  if (!store.lastFetched && !store.isLoading) {
-    store.fetchCategories();
-  }
+// Auto-fetch on first access
+  useEffect(() => {
+    if (!store.lastFetched && !store.isLoading) {
+      store.fetchCategories();
+    }
+  }, [store.lastFetched, store.isLoading]);
 
   return {
     categories: store.categories,
