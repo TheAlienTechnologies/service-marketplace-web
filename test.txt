@@ -1,0 +1,2271 @@
+
+
+# CLAUDE.md
+
+Frontend Codebase Overview — Service Marketplace
+
+  ---
+  Tech Stack
+
+  ┌───────────────┬─────────────────────────────────────────────────────┐
+  │     Layer     │                     Technology                      │
+  ├───────────────┼─────────────────────────────────────────────────────┤
+  │ Framework     │ Next.js 15.4.6 (App Router, React 19, TypeScript 5) │
+  ├───────────────┼─────────────────────────────────────────────────────┤
+  │ Styling       │ Tailwind CSS 4 + Radix UI primitives                │
+  ├───────────────┼─────────────────────────────────────────────────────┤
+  │ State         │ Zustand 5 (persisted auth store, categories store)  │
+  ├───────────────┼─────────────────────────────────────────────────────┤
+  │ Forms         │ React Hook Form + Zod validation                    │
+  ├───────────────┼─────────────────────────────────────────────────────┤
+  │ HTTP          │ Native fetch() (Axios installed but unused)         │
+  ├───────────────┼─────────────────────────────────────────────────────┤
+  │ Auth          │ JWT (localStorage) + better-auth (Google OAuth)     │
+  ├───────────────┼─────────────────────────────────────────────────────┤
+  │ Charts        │ Recharts                                            │
+  ├───────────────┼─────────────────────────────────────────────────────┤
+  │ Carousel      │ Swiper                                              │
+  ├───────────────┼─────────────────────────────────────────────────────┤
+  │ Notifications │ React Toastify                                      │
+  ├───────────────┼─────────────────────────────────────────────────────┤
+  │ Maps          │ Google Maps JS API                                  │
+  ├───────────────┼─────────────────────────────────────────────────────┤
+  │ Bot Chat      │ React Markdown for rendering responses              │
+  └───────────────┴─────────────────────────────────────────────────────┘
+
+  ---
+  Directory Structure
+
+  /
+  ├── app/                        # Next.js App Router
+  │   ├── page.tsx                # Homepage
+  │   ├── layout.tsx              # Root layout
+  │   ├── api/auth/[...all]/      # better-auth OAuth handler
+  │   ├── auth/callback/          # Google OAuth callback
+  │   ├── services/[id]/          # Service detail page
+  │   ├── categories/[slug]/      # Category results + filters
+  │   ├── orders/                 # User orders list + detail + review
+  │   ├── checkout/               # Checkout page
+  │   └── dashboard/              # Protected dashboard
+  │       ├── page.tsx            # Revenue charts + stats
+  │       ├── services/           # Provider service management
+  │       ├── orders/             # Provider received orders
+  │       ├── quotes/             # Quote management
+  │       ├── messages/           # Messaging
+  │       ├── reviews/            # Reviews
+  │       ├── disputes/           # Dispute resolution
+  │       ├── profile/            # User profile settings
+  │       ├── categories/         # Admin: CRUD categories
+  │       ├── users/              # Admin: manage users
+  │       └── support/            # Support tickets
+  │
+  ├── components/
+  │   ├── auth/                   # Full auth + onboarding flow
+  │   │   ├── auth-modal.tsx      # Orchestrates all auth steps
+  │   │   ├── sign-in-form.tsx
+  │   │   ├── sign-up-form.tsx
+  │   │   ├── verify-email-form.tsx
+  │   │   ├── forgot-password-*.tsx
+  │   │   ├── onboarding/         # User onboarding (personalization, location, profile, interests)
+  │   │   └── provider/           # Provider onboarding (profile, bio, skills, coverage, docs)
+  │   ├── botChat/                # AI bot chat widget
+  │   ├── dashboard/              # Sidebar + dashboard header
+  │   ├── layout/                 # Site header, footer, logo
+  │   ├── sections/               # Page sections (hero, cards, carousels, service detail)
+  │   └── ui/                     # Radix-based UI primitives
+  │
+  ├── lib/
+  │   ├── api.ts                  # Central API client (all endpoints)
+  │   ├── auth.ts                 # better-auth server config
+  │   ├── auth-client.ts          # better-auth client instance
+  │   └── mock-*.ts               # Fallback mock data
+  │
+  ├── store/
+  │   ├── auth-store.ts           # Auth state + flow control
+  │   └── categories-store.ts     # Categories + 5-min cache
+  │
+  └── types/                      # TypeScript types (auth, service, bot)
+
+  ---
+  Backend Connectivity
+
+  API Base URL: NEXT_PUBLIC_API_URL (defaults to http://localhost:3000/api)
+
+  Auth mechanism: JWT Bearer token stored in localStorage (auth_token + refresh_token). Google OAuth handled by better-auth at NEXT_PUBLIC_BETTER_AUTH_URL.
+
+  All API Endpoints:
+
+  ┌────────┬────────────────────────────────────────┬──────────────────────────────────────┐
+  │ Method │                Endpoint                │             What it does             │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ POST   │ /auth/login                            │ Sign in                              │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ POST   │ /auth/register                         │ Register                             │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ POST   │ /auth/social                           │ Google OAuth                         │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ POST   │ /auth/verify-email                     │ Verify email OTP                     │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ POST   │ /auth/resend-email-verification        │ Resend email OTP                     │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ POST   │ /auth/send-phone-verification          │ Send phone OTP                       │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ POST   │ /auth/verify-phone                     │ Verify phone                         │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ GET    │ /auth/me                               │ Get current user                     │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ POST   │ /auth/refresh                          │ Refresh JWT                          │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ POST   │ /auth/forgot-password                  │ Request password reset               │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ POST   │ /auth/verify-password-reset-otp        │ Verify reset OTP                     │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ POST   │ /auth/reset-password                   │ Set new password                     │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ GET    │ /onboarding/status                     │ Onboarding completion check          │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ PUT    │ /onboarding/interests                  │ Save user interests                  │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ PUT    │ /onboarding/location                   │ Save location                        │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ PUT    │ /onboarding/profile                    │ Save profile + avatar                │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ PUT    │ /onboarding/experience                 │ Save experience level                │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ POST   │ /onboarding/documents                  │ Upload verification docs             │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ GET    │ /onboarding/documents                  │ List uploaded docs                   │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ DELETE │ /onboarding/documents/{id}             │ Remove a document                    │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ POST   │ /onboarding/complete                   │ Mark onboarding done                 │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ GET    │ /categories                            │ List all categories                  │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ GET    │ /categories/featured                   │ Featured categories                  │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ GET    │ /categories/{id}                       │ Single category                      │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ POST   │ /categories                            │ Create category (admin, FormData)    │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ PUT    │ /categories/{id}                       │ Update category (admin)              │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ DELETE │ /categories/{id}                       │ Delete category (admin)              │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ GET    │ /users                                 │ List users (admin, paginated)        │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ GET    │ /users/stats                           │ User statistics (admin)              │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ PATCH  │ /users/{id}/status                     │ Update user status (admin)           │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ DELETE │ /users/{id}                            │ Delete user (admin)                  │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ POST   │ /services                              │ Create service (FormData)            │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ GET    │ /services                              │ List services (filters)              │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ GET    │ /services/my                           │ Current user's services              │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ GET    │ /services/admin/all                    │ All services (admin)                 │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ GET    │ /services/{id}                         │ Single service                       │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ PUT    │ /services/{id}                         │ Update service                       │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ PATCH  │ /services/{id}/status                  │ Change status (DRAFT/PUBLISHED/etc.) │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ DELETE │ /services/{id}                         │ Delete service                       │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ POST   │ /services/{id}/images                  │ Upload gallery images                │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ DELETE │ /services/{serviceId}/images/{imageId} │ Delete gallery image                 │
+  ├────────┼────────────────────────────────────────┼──────────────────────────────────────┤
+  │ POST   │ /support/bot                           │ Send message to AI bot (no auth)     │
+  └────────┴────────────────────────────────────────┴──────────────────────────────────────┘
+
+  ---
+  State Management
+
+  auth-store.ts — Persisted to localStorage (auth-storage):
+  - Tracks: user, isAuthenticated, showAuthModal, authStep, authFlow, userAuthStep, providerAuthStep
+  - Controls the entire multi-step auth/onboarding modal flow
+  - Actions: startUserFlow, startProviderFlow, nextUserStep, nextProviderStep, signOut, etc.
+
+  categories-store.ts — In-memory with 5-minute TTL cache:
+  - Auto-fetches on first access via useCategories() hook
+  - Computed getters: featuredCategories(), topLevelCategories()
+
+  ---
+  Key Data Flows
+
+  Login:
+
+  ▎ SignInForm → POST /auth/login → store tokens → GET /onboarding/status → route to onboarding or dashboard
+
+  User Registration:
+
+  ▎ SignUpForm → POST /auth/register → email OTP → 8-step onboarding (interests, location, profile, experience, docs) → POST /onboarding/complete
+
+  Provider Registration:
+
+  ▎ Same signup → 9-step provider onboarding (bio, skills, coverage, documents) → pending review state
+
+  Service Creation:
+
+  ▎ /dashboard/services/new → collect title/category/plans/addons/images → POST /services (FormData) → redirect to services list
+
+  Bot Chat:
+
+  ▎ BotChatBox generates conversationId on mount → user sends message → POST /support/bot → displays markdown response → no auth required
+
+  Admin:
+
+  ▎ Dashboard with Recharts revenue graphs → manage users (PATCH /users/{id}/status), categories (full CRUD), disputes, services across all providers
+
+  ---
+  Environment Variables
+
+  NEXT_PUBLIC_API_URL               # Backend API base URL
+  NEXT_PUBLIC_BETTER_AUTH_URL       # Auth server URL (client-side)
+  NEXT_PUBLIC_GOOGLE_MAPS_API_KEY   # Google Maps
+  GOOGLE_CLIENT_ID                  # Google OAuth
+  GOOGLE_CLIENT_SECRET              # Google OAuth
+  BETTER_AUTH_URL                   # Auth server URL (server-side)
+  BETTER_AUTH_DATABASE_URL          # SQLite path for better-auth
+
+  ---
+  Notable gaps / work in progress:
+  - Category results page (/categories/[slug]) uses mock data — filtering UI exists but real API calls not wired
+  - No WebSocket connections yet (real-time messaging uses placeholder UI)
+  - Quotes, disputes, and support pages appear to have UI shells with partial API integration
+  - Service detail page (/services/[id]) also uses mock data for review sections
+
+##BACKEND CODEBASE OVERVIEW
+
+## Project Overview
+
+Pavodah Service Marketplace API — a NestJS backend for a service marketplace platform connecting clients with service providers.
+
+## Commands
+
+```bash
+# Development
+npm run start:dev          # Start with hot reload
+npm run start:debug        # Start with debug + watch mode
+
+# Build & Production
+npm run build              # Compile TypeScript
+npm run start:prod         # Run compiled production build
+
+# Code Quality
+npm run lint               # ESLint with auto-fix
+npm run format             # Prettier formatting
+
+# Testing
+npm test                   # Run unit tests
+npm run test:watch         # Watch mode
+npm run test:cov           # Coverage report
+npm run test:e2e           # End-to-end tests
+
+# Database (Prisma)
+npm run prisma:generate    # Regenerate Prisma client after schema changes
+npm run prisma:migrate     # Create + apply migrations
+npm run prisma:push        # Push schema without migration history
+npm run prisma:reset       # Drop DB, rerun all migrations + seed
+```
+
+## Architecture
+
+### Module Structure
+
+Each feature domain is a self-contained NestJS module under `src/`. Key modules:
+
+- **auth** — JWT authentication, OAuth (Google/Apple/Facebook/Twitter), token refresh
+- **users** — User profiles, verification, subscriptions
+- **services** — Provider service listings, plans, addons
+- **orders** — Order lifecycle management
+- **chat** — Real-time user-to-provider messaging (WebSocket via Socket.io)
+- **botChat** — AI support chatbot using OpenAI (KWADWO assistant)
+- **quote** — Custom quote request flow between clients and providers
+- **dispute** — Conflict resolution with admin notes
+- **analytics** — Metrics and reporting
+- **onboarding** — New user onboarding flow
+- **common** — Shared decorators, guards, filters, services, utils, seeders
+
+### Global Setup (app.module.ts / main.ts)
+
+- **API prefix**: `/api`
+- **Global JWT guard** applied to all routes — use `@Public()` decorator to skip auth
+- **Global exception filter** — standardized error responses
+- **Validation pipe** with `transform: true` and `whitelist: true` enabled globally
+- **Winston logging** to console and files
+- **Seeder** auto-runs on startup (admin user + categories)
+- Static files served from `/uploads`
+
+### Authentication Flow
+
+JWT-based with access + refresh tokens. Passport.js + passport-jwt. Key decorators in `src/common/decorators/`:
+- `@Public()` — marks endpoint as unauthenticated
+- `@Roles(Role.ADMIN)` — role-based access control
+- `@CurrentUser()` — extracts user from JWT payload
+
+### Database
+
+PostgreSQL via Prisma ORM. Schema at `prisma/schema.prisma`. Generated client outputs to `prisma/generated/`.
+
+After any schema change: run `npm run prisma:generate` then `npm run prisma:migrate`.
+
+### BotChat Module
+
+AI support chatbot (`src/botChat/`):
+- **Endpoint**: `POST /api/support/bot` (public, no auth)
+- **LLM**: OpenAI GPT-4o-mini via `src/botChat/llm/client.ts`
+- **State**: In-memory conversation tracking via `botChat.repository.ts` (Map of conversationId → responseId)
+- **Prompts**: `src/botChat/prompt/chatbot.txt` (system prompt) + `Pavodah.md` (platform knowledge base)
+- Requires `OPEN_AI_KEY` environment variable
+
+### Common Services
+
+Located in `src/common/services/`:
+- **EmailService** — AWS SES or Resend (controlled by `EMAIL_PROVIDER` env var)
+- **FileUploadService** — AWS S3 or Supabase storage
+- **SmsService** — AWS SNS
+
+### Response Pattern
+
+Use `ResponseUtil` from `src/common/utils/` for consistent response formatting across all controllers.
+
+## Required Environment Variables
+
+```
+DATABASE_URL=
+JWT_SECRET=
+JWT_EXPIRATION_TIME=
+JWT_REFRESH_EXPIRATION_TIME=
+EMAIL_PROVIDER=         # AWS | RESEND
+RESEND_API_KEY=
+FROM_EMAIL=
+AWS_REGION=
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_S3_BUCKET_NAME=
+OPEN_AI_KEY=            # Required for botChat module
+SUPABASE_URL=
+SUPABASE_KEY=
+SUPABASE_BUCKET_NAME=
+APP_NAME=
+APP_URL=
+SUPPORT_EMAIL=
+ADMIN_EMAIL=
+ADMIN_PASSWORD=
+PORT=3000
+```
+PAVODAH FULL BACKEND GUIDE
+Pavodah Service Marketplace — Full Backend Guide      
+                                                        
+  ---                                                   
+  1. Application Bootstrap                              
+                                                        
+  src/main.ts                                           
+                                                        
+  The entry point. It:
+  - Creates a NestJS app with NestExpressApplication    
+  - Sets global prefix /api (so all routes are /api/...)
+  - Applies a global ValidationPipe with transform: true
+   and whitelist: true — this means DTOs auto-cast types
+   and unknown fields are stripped                      
+  - Enables CORS (open to all origins — you'll want to  
+  restrict this in prod)                                
+  - Serves static files (uploads) at /uploads           
+  - Runs the Seeder on startup (creates admin user +
+  default categories)                                   
+  - Listens on PORT env var (default 3000)              
+                                                        
+  src/app.module.ts                                     
+                                                        
+  The root module. Registers every feature module and   
+  two global providers:                                 
+  - JwtAuthGuard as APP_GUARD — applied automatically to
+   every route. To skip it, use @Public()               
+  - ApplicationExceptionFilter as APP_FILTER — catches  
+  every thrown error and formats the response           
+  consistently                                          
+              
+  Also sets up Winston logging (console + file), writing
+   to /log/info/ and /log/error/.                       
+  
+  ---                                                   
+  2. Database Schema (Prisma)
+                             
+  File: prisma/schema.prisma → Generated client in
+  prisma/generated/                                     
+  
+  Key Models                                            
+                  
+  User
+
+  The central entity. Fields of note:                   
+  
+  Field: role                                           
+  Type: USER | ADMIN | SERVICE_PROVIDER              
+  Purpose: Controls what endpoints a user can access 
+  ────────────────────────────────────────           
+  Field: status                                      
+  Type: ACTIVE | SUSPENDED | DELETED                    
+  Purpose: Guards check this on every authenticated  
+    request                                             
+  ────────────────────────────────────────              
+  Field: emailVerified / phoneVerified
+  Type: Boolean                                         
+  Purpose: Tracks verification state
+  ────────────────────────────────────────
+  Field: emailVerificationOtp                           
+  Type: String?
+  Purpose: Stored hashed OTP during verification        
+  ────────────────────────────────────────
+  Field: emailVerificationExpires                       
+  Type: DateTime?
+  Purpose: Expiry window (10 min)                       
+  ────────────────────────────────────────
+  Field: emailVerificationAttempts                      
+  Type: Int
+  Purpose: Incremented on wrong OTP, max 5              
+  ────────────────────────────────────────
+  Field: passwordResetOtp / passwordResetExpires /      
+    passwordResetAttempts
+  Type: —                                               
+  Purpose: Same pattern for password reset (15 min)
+  ────────────────────────────────────────
+  Field: isServiceProviderVerified                      
+  Type: Boolean
+  Purpose: Set by admin after document review           
+  ────────────────────────────────────────
+  Field: hasCompletedOnboarding                         
+  Type: Boolean
+  Purpose: Set after onboarding flow completes          
+  ────────────────────────────────────────
+  Field: profileCompleteness                            
+  Type: Int
+  Purpose: 0-100% calculated from filled fields         
+  ────────────────────────────────────────
+  Field: isPremium / subscriptionStatus                 
+  Type: —
+  Purpose: Subscription tracking                        
+  ────────────────────────────────────────
+  Field: lastLoginAt / lastActiveAt                     
+  Type: DateTime
+  Purpose: Activity tracking                            
+                  
+  Service
+
+  A listing created by a SERVICE_PROVIDER.              
+  - Has status: DRAFT → PUBLISHED → ARCHIVED/SUSPENDED
+  - Must have at least 1 ServicePlan to be published    
+  - Related: ServicePlan[], ServiceAddon[],         
+  ServiceImage[]                                        
+                                                        
+  Order                                                 
+                                                        
+  Created by a client against a service plan.           
+  - Status flow: PENDING → AWAITING → IN_PROGRESS → 
+  COMPLETED → REFUNDED (or DECLINED)                    
+  - Stores pricing snapshot at time of order (plan
+  title, price, addons total, coupon, final total)      
+  - Related to one Review? and one Dispute?             
+  
+  QuoteRequest                                          
+                  
+  Custom project quote from client to provider.         
+  - Status: NEW → PENDING → ACCEPTED/DECLINED/EXPIRED
+  - Can include attachments                             
+                  
+  Conversation + Message                                
+  
+  Real-time chat between client and provider. One       
+  conversation per pair (unique constraint on providerId
+   + userId).                                           
+                  
+  Dispute                                               
+  
+  Filed against a completed order.                      
+  - issueType auto-assigns priority (HIGH for
+  payment/non-delivery, MEDIUM for quality/late, LOW for
+   other)                                               
+  - Status: OPEN → INVESTIGATING → RESOLVED → CLOSED    
+                  
+  Review                                                
+  
+  One review per order. Linked to client, provider, and 
+  service.        
+                                                        
+  VerificationDocument
+
+  Documents uploaded by providers during onboarding.    
+  - Status: UPLOADED → UNDER_REVIEW → APPROVED/REJECTED
+                                                        
+  ---             
+  3. Authentication (src/auth/)
+                                                        
+  Registration Flow
+                                                        
+  POST /api/auth/register
+  Body: { email, password, role? }
+                                                        
+  1. AuthService.register() is called                   
+  2. Checks if email already exists → throws conflict   
+  3. Hashes password with bcryptjs (salt = 12)          
+  4. Creates User in DB (role defaults to USER unless   
+  SERVICE_PROVIDER passed)                              
+  5. Generates access token (JWT, ~15 min) + refresh    
+  token (JWT, 30 days)                                  
+  6. Calls sendEmailVerificationOtp() → generates
+  6-digit OTP, stores in DB with 10-min expiry, sends   
+  email           
+  7. Returns { accessToken, refreshToken, user }        
+                  
+  ▎ The user gets tokens immediately on registration.   
+  They can use the API before verifying email, but some 
+  features may require emailVerified: true.             
+                  
+  ---
+  Login Flow
+
+  POST /api/auth/login
+  Body: { email, password }                             
+  
+  1. Finds user by email                                
+  2. Compares password with bcrypt.compare()
+  3. Checks user.status === ACTIVE (suspended/deleted   
+  users cannot login)                                   
+  4. Updates lastLoginAt                                
+  5. Generates new access + refresh token pair          
+  6. Returns tokens + user
+                                                        
+  ---             
+  Social Auth (Google)                                  
+                  
+  POST /api/auth/social
+  Body: { provider: "GOOGLE", accessToken, idToken,
+  role? }                                               
+  
+  1. Validates the Google idToken via Google's API      
+  2. Extracts email, name, avatar from Google profile
+  3. If user exists → update their Google data, generate
+   tokens                                               
+  4. If user doesn't exist → create new user (no        
+  password, emailVerified: true since Google verified   
+  it), generate tokens
+  5. Returns tokens + user                              
+                  
+  ---
+  Token Refresh
+
+  POST /api/auth/refresh
+  Body: { refreshToken }
+
+  1. RefreshJwtStrategy validates the refresh token     
+  signature
+  2. Extracts userId from payload                       
+  3. Generates new access + refresh token pair          
+  4. Updates lastActiveAt
+  5. Returns new tokens                                 
+                  
+  ---
+  JWT Strategy & Guard
+                                                        
+  JwtStrategy (src/auth/strategies/jwt.strategy.ts):
+  - Extracts Bearer token from Authorization header     
+  - Verifies with JWT_SECRET                       
+  - Calls authService.validateUser(userId) which:       
+    - Loads user from DB                                
+    - Checks status === ACTIVE
+    - Attaches { id, email, firstName, lastName,        
+  username, role, isActive, createdAt, updatedAt } to   
+  req.currentUser                                       
+                                                        
+  JwtAuthGuard (src/auth/guards/jwt-auth.guard.ts):     
+  - Registered globally in app.module.ts
+  - On every request, checks for @Public() metadata → if
+   present, skips auth                                  
+  - Otherwise enforces JWT validation                   
+                                     
+  RolesGuard (src/auth/guards/roles.guard.ts):          
+  - Reads @Roles() / @IsAdmin() / @IsServiceProvider()  
+  metadata                                              
+  - Compares req.currentUser.role against required roles
+  - Throws 403 Forbidden if mismatch                    
+                  
+  ---                                                   
+  Password Reset Flow
+                                                        
+  POST /api/auth/forgot-password → { email }
+  POST /api/auth/verify-password-reset-otp → { email,   
+  otpCode }
+  POST /api/auth/reset-password → { email, otpCode,     
+  newPassword }                                         
+  
+  1. forgotPassword() — always returns success (doesn't 
+  reveal if email exists). Generates 6-digit OTP, stores
+   with 15-min expiry, sends email                      
+  2. verifyPasswordResetOtp() — validates OTP format,
+  checks match, checks expiry, max 5 attempts           
+  3. resetPassword() — re-validates OTP then updates
+  password (bcrypt hash), clears OTP fields             
+                  
+  ---                                                   
+  Phone Verification Flow
+
+  POST /api/auth/send-phone-verification → {
+  phoneNumber, countryCode }                            
+  POST /api/auth/verify-phone → { phoneNumber, otpCode }
+  POST /api/auth/resend-phone-verification              
+                                                        
+  Uses PhoneVerification table (separate from User). OTP
+   sent via AWS SNS SMS.                                
+  Phone numbers are formatted to E.164 (Ghana +233      
+  handled specially).                                   
+  
+  ---                                                   
+  Logout          
+        
+  There is no server-side logout endpoint — this is a
+  stateless JWT setup. The frontend discards the tokens.
+   For true invalidation, you'd need a token blacklist
+  (not currently implemented).                          
+                  
+  ---
+  Auth DTOs
+                                                        
+  DTO: RegisterDto                                    
+  Fields: email, password (min 6), role?                
+  ────────────────────────────────────────            
+  DTO: LoginDto                                       
+  Fields: email, password                             
+  ────────────────────────────────────────              
+  DTO: SocialAuthDto                                  
+  Fields: provider (GOOGLE), accessToken, idToken, role?
+  ────────────────────────────────────────              
+  DTO: ForgotPasswordDto                              
+  Fields: email                                         
+  ────────────────────────────────────────            
+  DTO: ResetPasswordDto                               
+  Fields: email, otpCode, newPassword (min 6, must have
+    upper+lower+digit+special)                          
+  ────────────────────────────────────────            
+  DTO: VerifyOtpDto                                     
+  Fields: email, otpCode                              
+  ────────────────────────────────────────            
+  DTO: ChangePasswordDto                              
+  Fields: currentPassword, newPassword                  
+  ────────────────────────────────────────            
+  DTO: RefreshTokenDto                                  
+  Fields: refreshToken
+  ────────────────────────────────────────              
+  DTO: UpdateProfileDto
+  Fields: firstName, lastName, displayName, username,   
+    avatar, bio, dateOfBirth, timezone, themePreference,
+
+    notification flags, preferredLanguage,
+    dataAnalyticsEnabled
+
+  ---
+  4. Common Infrastructure (src/common/)
+                                                        
+  Decorators
+                                                        
+  Decorator: @Public()                               
+  File: is-public.decorator.ts                       
+  Effect: Skips JwtAuthGuard                         
+  ────────────────────────────────────────           
+  Decorator: @Roles(...roles)                        
+  File: roles.decorator.ts                              
+  Effect: Requires specific roles                    
+  ────────────────────────────────────────              
+  Decorator: @IsAdmin()                                 
+  File: same                                         
+  Effect: Shorthand for @Roles(Role.ADMIN)              
+  ────────────────────────────────────────              
+  Decorator: @IsServiceProvider()                    
+  File: same                                            
+  Effect: Shorthand for @Roles(Role.SERVICE_PROVIDER, 
+    Role.ADMIN)                                         
+  ────────────────────────────────────────           
+  Decorator: @CurrentUser(field?)                       
+  File: current-user.decorator.ts                       
+  Effect: Injects req.currentUser (or a specific field)
+    into the controller param                           
+                  
+  Usage example in a controller:
+  @Get('me')   
+  getMe(@CurrentUser() user: User) { ... }
+                                                        
+  @Get('id')                                            
+  getId(@CurrentUser('userId') id: string) { ... }  //  
+  'userId' maps to 'id'                                 
+                                                        
+  Global Exception Filter
+                                                        
+  src/common/filters/http-filter.filter.ts              
+  
+  Catches everything. Handles Prisma errors specially:  
+  - P2002 (unique constraint) → 409 Conflict
+  - P2003 (foreign key violation) → 400 Bad Request     
+  - P2025 (record not found) → 404 Not Found       
+                                                        
+  Returns { message, data: null } in production. In dev,
+   includes full error stack.                           
+                  
+  Response Util                                         
+                  
+  src/common/utils/response.util.ts
+
+  ResponseUtil.success(data, 'message')
+  // → { message: 'message', data: { ... } }            
+                                                        
+  ResponseUtil.errorWithoutData('error message')        
+  // → { message: 'error message', data: null }         
+                                                        
+  All controllers use this for consistent response      
+  shapes.                                               
+                                                        
+  Pagination Util 
+
+  src/common/utils/pagination.util.ts
+
+  PaginationUtil.validatePagination(page, limit)   // 
+  normalizes & caps values                              
+  PaginationUtil.getSkip(page, limit)               // 
+  calculates Prisma skip                                
+  PaginationUtil.createPaginatedResult(docs, total,
+  page, limit)                                          
+  // Returns: { data, pagination: { page, limit, total, 
+  totalPages, hasNext, hasPrev } }                      
+                  
+  ---                                                   
+  5. Users Module (src/users/) — Admin Only
+                                                        
+  All endpoints require @IsAdmin().
+                                                        
+  GET    /api/users              → paginated list with
+  search/role/status filters                            
+  GET    /api/users/stats        → { totalUsers,
+  activeUsers, premiumUsers, onboardedUsers }           
+  GET    /api/users/:id          → full user profile
+  PATCH  /api/users/:id/status   → change               
+  ACTIVE/SUSPENDED/DELETED                              
+  DELETE /api/users/:id          → soft delete (marks   
+  deleted, prefixes email with timestamp)               
+                  
+  Key UsersService methods used internally by other     
+  modules:        
+  - findById(), findByEmail(), findByUsername()         
+  - updateProfile() — used by auth /profile endpoint    
+  - incrementEmailVerificationAttempts() — called on
+  failed OTP                                            
+  - updateOnboardingStatus() — called when onboarding
+  completes                                             
+                                                        
+  ---
+  6. Onboarding Module (src/onboarding/)                
+                                        
+  The guided setup flow after registration.
+                                                        
+  GET    /api/onboarding/status         → progress
+  object with completion %                              
+  PUT    /api/onboarding/location       → add/update
+  address (lat/lng, city, country)                      
+  PUT    /api/onboarding/profile        → update name,
+  bio, avatar (file upload)                             
+  PUT    /api/onboarding/interests      → set category
+  interests (INTEREST or SERVICE type)                  
+  PUT    /api/onboarding/experience     → set
+  BEGINNER/INTERMEDIATE/EXPERT (providers only)         
+  POST   /api/onboarding/documents      → upload
+  verification doc (PDF/DOC/images, max 10MB)           
+  GET    /api/onboarding/documents      → list uploaded
+  documents                                             
+  DELETE /api/onboarding/documents/:id  → delete
+  document                                              
+  POST   /api/onboarding/complete       → mark
+  onboarding done, calculate profileCompleteness        
+                  
+  profileCompleteness is calculated as a % of filled    
+  fields (name, bio, avatar, address, interests,
+  documents, etc.). Stored on User.                     
+                  
+  ---
+  7. Services Module (src/services/)
+                                    
+  Service providers create listings here.
+                                                        
+  POST   /api/services              → create service
+  (with cover image, plans, addons)                     
+  GET    /api/services              → public list of
+  PUBLISHED services (search/category/provider filter)  
+  GET    /api/services/my           → provider's own
+  services (all statuses)                               
+  GET    /api/services/admin/all    → admin view (all
+  services, all statuses)                               
+  GET    /api/services/:id          → single service
+  (published only unless you're the owner)              
+  PUT    /api/services/:id          → update service
+  (owner only)                                          
+  PATCH  /api/services/:id/status   → change
+  DRAFT/PUBLISHED (needs ≥1 plan to publish)            
+  DELETE /api/services/:id          → delete service
+  (owner only)                                          
+  POST   /api/services/:id/images   → upload portfolio
+  images (max 10)                                       
+  DELETE /api/services/:id/images/:imageId → delete
+  portfolio image                                       
+                  
+  Each service has:
+  - Plans (ServicePlan): title, price, inclusions,
+  isPopular, sortOrder                                  
+  - Addons (ServiceAddon): title, description, price
+  (optional extras)                                     
+  - Images (ServiceImage): portfolio images
+
+  ---                                                   
+  8. Orders Module (src/orders/)
+                                                        
+  Clients place orders against a service plan.
+                                                        
+  POST   /api/orders              → create order (select
+   plan + addons)                                       
+  GET    /api/orders/my           → client's orders
+  (filter by status)                                    
+  GET    /api/orders/provider     → provider's orders
+  (filter by status)                                    
+  GET    /api/orders/admin/all    → all orders (admin)
+  GET    /api/orders/:id          → single order (client
+   or provider only)
+  PATCH  /api/orders/:id/status   → update status       
+  DELETE /api/orders/:id          → delete              
+  
+  Status transitions:                                   
+  PENDING → AWAITING (provider accepts)
+  AWAITING → IN_PROGRESS (work starts) 
+  IN_PROGRESS → COMPLETED (work done)                   
+  COMPLETED → REFUNDED (if refund issued)
+  Any stage → DECLINED                                  
+                      
+  Order captures a pricing snapshot at creation: plan   
+  title, price, addon prices, coupon discount, final    
+  total.                                                
+                                                        
+  ---             
+  9. Chat Module (src/chat/)
+                            
+  Real-time messaging between clients and providers.
+                                                        
+  POST /api/chat/start                      → start (or
+  get existing) conversation                            
+  GET  /api/chat/conversations              → all
+  conversations for current user                        
+  GET  /api/chat/conversations/:id/messages → paginated
+  messages                                              
+  POST /api/chat/upload                     → upload
+  file attachment                                       
+                  
+  Real-time via Socket.io WebSocket (chat.gateway.ts).  
+  When a message is sent via WebSocket, it's stored in
+  DB (Message model) and broadcast to the other         
+  participant.    
+
+  One Conversation per client-provider pair (enforced by
+   unique DB constraint).
+                                                        
+  ---             
+  10. Quote Module (src/quote/)
+                               
+  Clients can request custom quotes from providers.
+                                                        
+  POST   /api/quotes              → create quote (with
+  file attachments)                                     
+  GET    /api/quotes/client       → quotes submitted by
+  current user                                          
+  GET    /api/quotes/provider     → quotes received by
+  provider                                              
+  GET    /api/quotes/:id          → single quote
+  PATCH  /api/quotes/:id/status   → provider            
+  accepts/declines
+  POST   /api/quotes/:id/offer    → provider sends      
+  custom offer with price                               
+  PATCH  /api/quotes/:id/respond  → client
+  accepts/declines provider's offer                     
+                  
+  ---                                                   
+  11. Dispute Module (src/dispute/)
+
+  POST  /api/disputes           → raise dispute on a
+  completed order                                       
+  GET   /api/disputes           → all disputes (admin
+  only)                                                 
+  GET   /api/disputes/my        → user's own disputes
+  GET   /api/disputes/:id       → single dispute        
+  (participants or admin)                               
+  PATCH /api/disputes/:id/status → update status + admin
+   note (admin only)                                    
+                  
+  Priority is auto-assigned from issueType:             
+  - HIGH → PAYMENT_DISPUTE, NON_DELIVERY
+  - MEDIUM → QUALITY_ISSUE, LATE_DELIVERY               
+  - LOW → MISCOMMUNICATION, OTHER        
+                                                        
+  ---                                                   
+  12. Analytics Module (src/analytics/)
+                                                        
+  GET /api/analytics/user     → client dashboard (orders
+   count, spending, recent orders)                      
+  GET /api/analytics/provider → provider dashboard
+  (orders, avg rating, earnings)                        
+  GET /api/analytics/admin    → admin dashboard (users,
+  providers, revenue, top categories)                   
+                  
+  ▎ Note: Monthly chart data is currently mocked. Real  
+  chart data would require time-series DB queries.
+                                                        
+  ---             
+  13. BotChat Module (src/botChat/)
+                                                        
+  POST /api/support/bot  (@Public — no auth needed)
+  Body: { message, conversationId? }                    
+                  
+  - Uses OpenAI GPT-4o-mini via                         
+  src/botChat/llm/client.ts
+  - System prompt loaded from                           
+  src/botChat/prompt/chatbot.txt + Pavodah.md (knowledge
+   base)
+  - Conversation state tracked in-memory                
+  (Map<conversationId, lastResponseId>)                 
+  - Parameters: temperature: 0.2, maxTokens: 140
+  - Requires OPEN_AI_KEY env var                        
+                  
+  ---                                                   
+  14. How Roles Work End-to-End
+                                                        
+  USER (default)
+                                                        
+  - Can browse services (public)                        
+  - Can create orders
+  - Can start conversations                             
+  - Can request quotes
+  - Can raise disputes
+  - Can complete onboarding                             
+  - Cannot create services or access provider/admin
+  endpoints                                             
+                  
+  SERVICE_PROVIDER                                      
+                  
+  - Set at registration with role: "SERVICE_PROVIDER" or
+   promoted later
+  - Can do everything USER can do, plus:                
+  - Create/manage services, plans, addons, images
+  - View & manage incoming orders                       
+  - Respond to quotes, send offers                      
+  - Access provider analytics                           
+  - Upload verification documents                       
+  - Must complete onboarding + have documents reviewed  
+  to get isServiceProviderVerified: true                
+                                                        
+  ADMIN                                                 
+                  
+  - Set directly in DB or via seeder (auto-created on   
+  startup from ADMIN_EMAIL/ADMIN_PASSWORD env vars)
+  - Full access to all endpoints                        
+  - Can manage user statuses, view all orders/disputes, 
+  resolve disputes, review documents                    
+  - Access admin analytics                              
+                                                        
+  ---             
+  15. Frontend Integration Pattern
+                                                        
+  Headers
+                                                        
+  Every authenticated request must send:
+  Authorization: Bearer <accessToken>
+
+  Token Lifecycle                                       
+  
+  1. On login/register → store accessToken (15 min) and 
+  refreshToken (30 days)
+  2. When a request returns 401 → call POST             
+  /api/auth/refresh with { refreshToken }               
+  3. Store the new token pair, retry the original
+  request                                               
+  4. If refresh also fails → force logout (discard
+  tokens, redirect to login)                            
+                  
+  Response Shape                                        
+                  
+  Every endpoint returns:                               
+  { "message": "...", "data": { ... } }
+  Errors return the same shape with data: null.         
+                  
+  File Uploads                                          
+  
+  Endpoints that accept files use multipart/form-data.  
+  Send files as form fields alongside JSON data.
+                                                        
+  WebSocket (Chat)                                      
+  
+  Connect to the WebSocket server at the base URL.      
+  Authenticate by passing the JWT token during the
+  socket handshake. Listen for message events on the    
+  conversation channel.
+
+  ---
+  16. Key Files to Know When Adding Features
+                                                        
+  File: prisma/schema.prisma                          
+  Why it matters: Add new models/fields here, then run  
+    prisma:generate + prisma:migrate                  
+  ────────────────────────────────────────              
+  File: src/app.module.ts                             
+  Why it matters: Register every new module here        
+  ────────────────────────────────────────            
+  File: src/common/decorators/                          
+  Why it matters: Use @Public(), @CurrentUser(),      
+    @IsAdmin() in controllers                           
+  ────────────────────────────────────────            
+  File: src/common/utils/response.util.ts               
+  Why it matters: Wrap all responses with               
+    ResponseUtil.success()                            
+  ────────────────────────────────────────              
+  File: src/common/utils/pagination.util.ts             
+  Why it matters: Use for any paginated list endpoint
+  ────────────────────────────────────────              
+  File: src/common/services/email.service.ts            
+  Why it matters: Add new email templates here          
+  ────────────────────────────────────────              
+  File: src/common/filters/http-filter.filter.ts        
+  Why it matters: Handles all errors globally — don't
+    duplicate error handling                            
+  ────────────────────────────────────────
+  File: src/common/services/file-upload.service.ts      
+  Why it matters: Use for any file upload feature
+
+// Support Chat System
+
+//   ---
+//   Step 1 — Update prisma/schema.prisma
+
+//   1a. Add 3 relations to the User model
+
+//   Find this line (line 76):
+//     verificationDocuments          VerificationDocument[]
+//   Add these 3 lines directly after it, before @@map("users"):
+
+//     initiatedSupportConversations SupportConversation[]
+//   @relation("SupportInitiator")
+//     handledSupportConversations   SupportConversation[] @relation("SupportAdmin")
+//     supportMessages               SupportMessage[]
+//   @relation("SupportMessageSender")
+
+//   1b. Add 2 new enums
+
+//   At the very bottom of the schema file, after the last enum:
+
+//   enum SupportConversationStatus {
+//     BOT
+//     WAITING_FOR_ADMIN
+//     ACTIVE_WITH_ADMIN
+//     CLOSED
+//   }
+
+//   enum SupportSenderType {
+//     USER
+//     SERVICE_PROVIDER
+//     ADMIN
+//     BOT
+//   }
+
+//   1c. Add 2 new models
+
+//   Add these after the Message model (after line 326), before QuoteRequest:
+
+//   model SupportConversation {
+//     id            String                    @id @default(cuid())
+//     createdAt     DateTime                  @default(now())
+//     updatedAt     DateTime                  @updatedAt
+//     initiatorId   String
+//     initiator     User                      @relation("SupportInitiator", fields:
+//   [initiatorId], references: [id])
+//     adminId       String?
+//     admin         User?                     @relation("SupportAdmin", fields:
+//   [adminId], references: [id])
+//     status        SupportConversationStatus @default(BOT)
+//     closedAt      DateTime?
+//     adminJoinedAt DateTime?
+//     messages      SupportMessage[]
+
+//     @@map("support_conversations")
+//   }
+
+//   model SupportMessage {
+//     id               String              @id @default(cuid())
+//     createdAt        DateTime            @default(now())
+//     conversationId   String
+//     conversation     SupportConversation @relation(fields: [conversationId],
+//   references: [id], onDelete: Cascade)
+//     senderId         String?
+//     sender           User?               @relation("SupportMessageSender", fields:
+//    [senderId], references: [id])
+//     senderType       SupportSenderType
+//     content          String
+//     openAiResponseId String?
+//     isRead           Boolean             @default(false)
+
+//     @@map("support_messages")
+//   }
+
+//   1d. Run the migration
+
+//   npm run prisma:generate
+//   npm run prisma:migrate
+//   When prompted for a migration name type: add_support_chat
+
+//   ---
+//   Step 2 — Create the folder structure
+
+//   src/supportChat/
+//   ├── dto/
+//   │   └── send-message.dto.ts
+//   ├── supportChat.controller.ts
+//   ├── supportChat.gateway.ts
+//   ├── supportChat.module.ts
+//   └── supportChat.service.ts
+
+//   ---
+//   Step 3 — Create src/supportChat/dto/send-message.dto.ts
+
+//   import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
+
+//   export class SendSupportMessageDto {
+//     @IsString()
+//     @IsNotEmpty()
+//     @MaxLength(2000)
+//     content: string;
+//   }
+
+//   ---
+//   Step 4 — Create src/supportChat/supportChat.service.ts
+
+//   import {
+//     Injectable,
+//     NotFoundException,
+//     ForbiddenException,
+//     BadRequestException,
+//   } from '@nestjs/common';
+//   import * as fs from 'fs';
+//   import * as path from 'path';
+//   import { PrismaService } from '../prisma/prisma.service';
+//   import { llmClient } from '../botChat/llm/client';
+//   import {
+//     SupportConversationStatus,
+//     SupportSenderType,
+//     Role,
+//   } from '../../generated/prisma';
+
+//   const promptDir = path.join(__dirname, '../botChat/prompt');
+//   const template = fs.readFileSync(path.join(promptDir, 'chatbot.txt'), 'utf8');
+//   const pavodahInfo = fs.readFileSync(path.join(promptDir, 'Pavodah.md'), 'utf8');
+//   const botInstructions = template.replace('{{pavodahInfo}}', pavodahInfo);
+
+//   const USER_SELECT = {
+//     id: true,
+//     firstName: true,
+//     lastName: true,
+//     avatar: true,
+//     role: true,
+//   };
+
+  
+//   export class SupportChatService {
+//     constructor(private readonly prisma: PrismaService) {}
+
+//     // ─── User: Start or resume an open conversation ───────────────────────────
+
+//     async startConversation(userId: string) {
+//       const existing = await this.prisma.supportConversation.findFirst({
+//         where: {
+//           initiatorId: userId,
+//           status: { not: SupportConversationStatus.CLOSED },
+//         },
+//         include: {
+//           messages: { orderBy: { createdAt: 'asc' } },
+//           initiator: { select: USER_SELECT },
+//           admin: { select: USER_SELECT },
+//         },
+//       });
+
+//       if (existing) return existing;
+
+//       const conversation = await this.prisma.supportConversation.create({
+//         data: { initiatorId: userId },
+//         include: {
+//           initiator: { select: USER_SELECT },
+//           admin: { select: USER_SELECT },
+//         },
+//       });
+
+//       const welcomeMessage = await this.prisma.supportMessage.create({
+//         data: {
+//           conversationId: conversation.id,
+//           senderType: SupportSenderType.BOT,
+//           content:
+//             "Hi! I'm KWADWO, your Pavodah support assistant. How can I help you
+//   today?",
+//         },
+//       });
+
+//       return { ...conversation, messages: [welcomeMessage] };
+//     }
+
+//     // ─── User/Admin: Send a message ───────────────────────────────────────────
+
+//     async sendMessage(
+//       conversationId: string,
+//       senderId: string,
+//       content: string,
+//       senderRole: Role,
+//     ) {
+//       const conversation = await this.prisma.supportConversation.findUnique({
+//         where: { id: conversationId },
+//       });
+
+//       if (!conversation) throw new NotFoundException('Conversation not found');
+
+//       if (conversation.status === SupportConversationStatus.CLOSED) {
+//         throw new BadRequestException('This conversation is closed');
+//       }
+
+//       // Only the initiator or the assigned admin can send messages
+//       const isAdmin = senderRole === Role.ADMIN;
+//       const isInitiator = conversation.initiatorId === senderId;
+//       const isAssignedAdmin = conversation.adminId === senderId;
+
+//       if (!isInitiator && !isAssignedAdmin && !isAdmin) {
+//         throw new ForbiddenException('You are not part of this conversation');
+//       }
+
+//       // Admin cannot send during bot phase — they haven't joined yet
+//       if (isAdmin && conversation.status === SupportConversationStatus.BOT) {
+//         throw new BadRequestException(
+//           'Admin cannot message while bot is handling this conversation',
+//         );
+//       }
+
+//       const senderType =
+//         senderRole === Role.ADMIN ? SupportSenderType.ADMIN : senderRole === Role.SERVICE_PROVIDER ? SupportSenderType.SERVICE_PROVIDER : SupportSenderType.USER;
+
+//       const userMessage = await this.prisma.supportMessage.create({
+//         data: { conversationId, senderId, senderType, content },
+//         include: { sender: { select: USER_SELECT } },
+//       });
+
+//       await this.prisma.supportConversation.update({
+//         where: { id: conversationId },
+//         data: { updatedAt: new Date() },
+//       });
+
+//       // In bot phase → generate AI reply
+//       let botMessage = null;
+//       if (conversation.status === SupportConversationStatus.BOT) {
+//         const lastBotMsg = await this.prisma.supportMessage.findFirst({
+//           where: {
+//             conversationId,
+//             senderType: SupportSenderType.BOT,
+//             openAiResponseId: { not: null },
+//           },
+//           orderBy: { createdAt: 'desc' },
+//         });
+
+//         const botResponse = await llmClient.generateText({
+//           model: 'gpt-4o-mini',
+//           prompt: content,
+//           temperature: 0.2,
+//           maxToken: 140,
+//           instructions: botInstructions,
+//           previousResponseId: (lastBotMsg?.openAiResponseId ?? undefined) as
+//   string,
+//         });
+
+//         botMessage = await this.prisma.supportMessage.create({
+//           data: {
+//             conversationId,
+//             senderType: SupportSenderType.BOT,
+//             content: botResponse.text,
+//             openAiResponseId: botResponse.id,
+//           },
+//         });
+
+//         await this.prisma.supportConversation.update({
+//           where: { id: conversationId },
+//           data: { updatedAt: new Date() },
+//         });
+//       }
+
+//       return { userMessage, botMessage };
+//     }
+
+//     // ─── User: Request human support ─────────────────────────────────────────
+
+//     async escalateToAdmin(conversationId: string, userId: string) {
+//       const conversation = await this.prisma.supportConversation.findUnique({
+//         where: { id: conversationId },
+//       });
+
+//       if (!conversation) throw new NotFoundException('Conversation not found');
+//       if (conversation.initiatorId !== userId) {
+//         throw new ForbiddenException('Not your conversation');
+//       }
+//       if (conversation.status !== SupportConversationStatus.BOT) {
+//         throw new BadRequestException(
+//           `Cannot escalate. Current status: ${conversation.status}`,
+//         );
+//       }
+
+//       const updated = await this.prisma.supportConversation.update({
+//         where: { id: conversationId },
+//         data: { status: SupportConversationStatus.WAITING_FOR_ADMIN },
+//         include: {
+//           initiator: { select: USER_SELECT },
+//           messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+//         },
+//       });
+
+//       const systemMessage = await this.prisma.supportMessage.create({
+//         data: {
+//           conversationId,
+//           senderType: SupportSenderType.BOT,
+//           content:
+//             "You've been added to the support queue. A human agent will be with you shortly. Please hold on.",
+//         },
+//       });
+
+//       return { conversation: updated, systemMessage };
+//     }
+
+//     // ─── Admin: Join a waiting conversation ──────────────────────────────────
+
+//     async adminJoinConversation(conversationId: string, adminId: string) {
+//       const updated = await this.prisma.$transaction(async (tx) => {
+//         const conversation = await tx.supportConversation.findUnique({
+//           where: { id: conversationId },
+//         });
+
+//         if (!conversation) throw new NotFoundException('Conversation not found');
+
+//         if (conversation.status !== SupportConversationStatus.WAITING_FOR_ADMIN) {
+//           throw new BadRequestException(
+//             'Conversation is not waiting for an admin',
+//           );
+//         }
+//         if (conversation.adminId !== null) {
+//           throw new BadRequestException(
+//             'Another admin already joined this conversation',
+//           );
+//         }
+
+//         return tx.supportConversation.update({
+//           where: { id: conversationId },
+//           data: {
+//             status: SupportConversationStatus.ACTIVE_WITH_ADMIN,
+//             adminId,
+//             adminJoinedAt: new Date(),
+//           },
+//           include: {
+//             initiator: { select: USER_SELECT },
+//             admin: { select: USER_SELECT },
+//           },
+//         });
+//       });
+
+//       const systemMessage = await this.prisma.supportMessage.create({
+//         data: {
+//           conversationId,
+//           senderType: SupportSenderType.BOT,
+//           content: `${updated.admin?.firstName ?? 'A support agent'} has joined
+//   the conversation.`,
+//         },
+//       });
+
+//       return { conversation: updated, systemMessage };
+//     }
+
+//     // ─── User or Admin: Close conversation ───────────────────────────────────
+
+//     async closeConversation(
+//       conversationId: string,
+//       userId: string,
+//       userRole: Role,
+//     ) {
+//       const conversation = await this.prisma.supportConversation.findUnique({
+//         where: { id: conversationId },
+//       });
+
+//       if (!conversation) throw new NotFoundException('Conversation not found');
+
+//       if (conversation.status === SupportConversationStatus.CLOSED) {
+//         throw new BadRequestException('Conversation is already closed');
+//       }
+
+//       const isAdmin = userRole === Role.ADMIN;
+//       const isInitiator = conversation.initiatorId === userId;
+
+//       if (!isAdmin && !isInitiator) {
+//         throw new ForbiddenException('You cannot close this conversation');
+//       }
+
+//       const updated = await this.prisma.supportConversation.update({
+//         where: { id: conversationId },
+//         data: { status: SupportConversationStatus.CLOSED, closedAt: new Date() },
+//       });
+
+//       const systemMessage = await this.prisma.supportMessage.create({
+//         data: {
+//           conversationId,
+//           senderType: SupportSenderType.BOT,
+//           content: 'This support conversation has been closed. Thank you!',
+//         },
+//       });
+
+//       return { conversation: updated, systemMessage };
+//     }
+
+//     // ─── Queries ──────────────────────────────────────────────────────────────
+
+//     async getMyConversations(userId: string) {
+//       return this.prisma.supportConversation.findMany({
+//         where: { initiatorId: userId },
+//         include: {
+//           messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+//           admin: { select: USER_SELECT },
+//         },
+//         orderBy: { updatedAt: 'desc' },
+//       });
+//     }
+
+//     async getConversationWithMessages(
+//       conversationId: string,
+//       userId: string,
+//       userRole: Role,
+//     ) {
+//       const conversation = await this.prisma.supportConversation.findUnique({
+//         where: { id: conversationId },
+//         include: {
+//           messages: { orderBy: { createdAt: 'asc' } },
+//           initiator: { select: USER_SELECT },
+//           admin: { select: USER_SELECT },
+//         },
+//       });
+
+//       if (!conversation) throw new NotFoundException('Conversation not found');
+
+//       const isAdmin = userRole === Role.ADMIN;
+//       const isParticipant =
+//         conversation.initiatorId === userId || conversation.adminId === userId;
+
+//       if (!isAdmin && !isParticipant) {
+//         throw new ForbiddenException('You are not part of this conversation');
+//       }
+
+//       return conversation;
+//     }
+
+//     // Admin: all conversations grouped by status
+//     async getAdminConversations() {
+//       const [waiting, active, closed] = await Promise.all([
+//         this.prisma.supportConversation.findMany({
+//           where: { status: SupportConversationStatus.WAITING_FOR_ADMIN },
+//           include: {
+//             initiator: { select: USER_SELECT },
+//             messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+//           },
+//           orderBy: { updatedAt: 'asc' }, // oldest waiting first
+//         }),
+//         this.prisma.supportConversation.findMany({
+//           where: { status: SupportConversationStatus.ACTIVE_WITH_ADMIN },
+//           include: {
+//             initiator: { select: USER_SELECT },
+//             admin: { select: USER_SELECT },
+//             messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+//           },
+//           orderBy: { updatedAt: 'desc' },
+//         }),
+//         this.prisma.supportConversation.findMany({
+//           where: { status: SupportConversationStatus.CLOSED },
+//           include: {
+//             initiator: { select: USER_SELECT },
+//             admin: { select: USER_SELECT },
+//             messages: { orderBy: { createdAt: 'desc' }, take: 1 },
+//           },
+//           orderBy: { closedAt: 'desc' },
+//           take: 50,
+//         }),
+//       ]);
+
+//       return { waiting, active, closed };
+//     }
+
+//     // Gateway helper — check if a socket user can join a support room
+//     async canAccessConversation(
+//       conversationId: string,
+//       userId: string,
+//       userRole: Role,
+//     ): Promise<boolean> {
+//       const conversation = await this.prisma.supportConversation.findUnique({
+//         where: { id: conversationId },
+//       });
+//       if (!conversation) return false;
+
+//       const isAdmin = userRole === Role.ADMIN;
+//       const isInitiator = conversation.initiatorId === userId;
+//       const isAssignedAdmin = conversation.adminId === userId;
+
+//       return isInitiator || isAssignedAdmin || isAdmin;
+//     }
+//   }
+
+//   ---
+//   Step 5 — Create src/supportChat/supportChat.gateway.ts
+
+//   import {
+//     WebSocketGateway,
+//     SubscribeMessage,
+//     MessageBody,
+//     ConnectedSocket,
+//     WebSocketServer,
+//     OnGatewayConnection,
+//     OnGatewayDisconnect,
+//   } from '@nestjs/websockets';
+//   import { Server, Socket } from 'socket.io';
+//   import { JwtService } from '@nestjs/jwt';
+//   import { ConfigService } from '@nestjs/config';
+//   import { Logger } from '@nestjs/common';
+//   import { SupportChatService } from './supportChat.service';
+//   import { Role } from '../../generated/prisma';
+
+//   const ADMIN_ROOM = 'support-admins';
+
+//   @WebSocketGateway({
+//     namespace: 'support',
+//     cors: { origin: '*' },
+//   })
+//   export class SupportChatGateway
+//     implements OnGatewayConnection, OnGatewayDisconnect
+//   {
+//     @WebSocketServer()
+//     server: Server;
+
+//     private readonly logger = new Logger(SupportChatGateway.name);
+
+//     constructor(
+//       private readonly jwtService: JwtService,
+//       private readonly configService: ConfigService,
+//       private readonly supportChatService: SupportChatService,
+//     ) {}
+
+//     // ─── Connection lifecycle ─────────────────────────────────────────────────
+
+//     async handleConnection(client: Socket) {
+//       try {
+//         const token =
+//           client.handshake.auth.token ||
+//           client.handshake.headers.authorization?.split(' ')[1];
+
+//         if (!token) throw new Error('No token provided');
+
+//         const decoded = this.jwtService.verify(token, {
+//           secret: this.configService.get('JWT_SECRET'),
+//         });
+
+//         client.data.user = decoded;
+//         const userId = decoded.id || decoded.sub;
+//         const role: Role = decoded.role;
+
+//         this.logger.log(
+//           `Support socket connected: ${client.id} (User: ${userId}, Role:
+//   ${role})`,
+//         );
+
+//         // Admins auto-join the admin broadcast room
+//         if (role === Role.ADMIN) {
+//           client.join(ADMIN_ROOM);
+//           this.logger.log(`Admin ${userId} joined ${ADMIN_ROOM}`);
+//         }
+//       } catch (error) {
+//         this.logger.error(`Support connection rejected: ${error.message}`);
+//         client.disconnect();
+//       }
+//     }
+
+//     handleDisconnect(client: Socket) {
+//       this.logger.log(`Support socket disconnected: ${client.id}`);
+//     }
+
+//     // ─── Join a support conversation room ────────────────────────────────────
+
+//     @SubscribeMessage('support:join')
+//     async handleJoin(
+//       @ConnectedSocket() client: Socket,
+//       @MessageBody() conversationId: string,
+//     ) {
+//       const user = client.data.user;
+//       const userId = user?.id || user?.sub;
+//       const role: Role = user?.role;
+
+//       if (!userId) return;
+
+//       const canAccess = await this.supportChatService.canAccessConversation(
+//         conversationId,
+//         userId,
+//         role,
+//       );
+
+//       if (!canAccess) {
+//         client.emit('support:error', {
+//           message: 'Access denied to this conversation',
+//         });
+//         return;
+//       }
+
+//       const room = `support-${conversationId}`;
+//       client.join(room);
+//       this.logger.log(`User ${userId} joined support room: ${room}`);
+//     }
+
+//     // ─── Leave a support conversation room ───────────────────────────────────
+
+//     @SubscribeMessage('support:leave')
+//     handleLeave(
+//       @ConnectedSocket() client: Socket,
+//       @MessageBody() conversationId: string,
+//     ) {
+//       const room = `support-${conversationId}`;
+//       client.leave(room);
+//       this.logger.log(`Client ${client.id} left support room: ${room}`);
+//     }
+
+//     // ─── Send a message ───────────────────────────────────────────────────────
+
+//     @SubscribeMessage('support:send_message')
+//     async handleSendMessage(
+//       @ConnectedSocket() client: Socket,
+//       @MessageBody() payload: { conversationId: string; content: string },
+//     ) {
+//       const user = client.data.user;
+//       const userId = user?.id || user?.sub;
+//       const role: Role = user?.role;
+
+//       if (!userId) return;
+
+//       try {
+//         const { userMessage, botMessage } =
+//           await this.supportChatService.sendMessage(
+//             payload.conversationId,
+//             userId,
+//             payload.content,
+//             role,
+//           );
+
+//         const room = `support-${payload.conversationId}`;
+
+//         // Broadcast the user/admin message to the room
+//         this.server.to(room).emit('support:message', { message: userMessage });
+
+//         // If bot replied, also broadcast it
+//         if (botMessage) {
+//           this.server.to(room).emit('support:message', { message: botMessage });
+//         }
+//       } catch (error) {
+//         this.logger.error(`support:send_message error: ${error.message}`);
+//         client.emit('support:error', { message: error.message });
+//       }
+//     }
+
+//     // ─── Escalate to admin ────────────────────────────────────────────────────
+
+//     @SubscribeMessage('support:escalate')
+//     async handleEscalate(
+//       @ConnectedSocket() client: Socket,
+//       @MessageBody() conversationId: string,
+//     ) {
+//       const user = client.data.user;
+//       const userId = user?.id || user?.sub;
+
+//       if (!userId) return;
+
+//       try {
+//         const { conversation, systemMessage } =
+//           await this.supportChatService.escalateToAdmin(conversationId, userId);
+
+//         const room = `support-${conversationId}`;
+
+//         // Tell everyone in the room the conversation has escalated
+//         this.server.to(room).emit('support:escalated', { conversation });
+//         this.server.to(room).emit('support:message', { message: systemMessage });
+
+//         // Notify all online admins of the new waiting conversation
+//         this.server.to(ADMIN_ROOM).emit('support:new_waiting', { conversation });
+//       } catch (error) {
+//         this.logger.error(`support:escalate error: ${error.message}`);
+//         client.emit('support:error', { message: error.message });
+//       }
+//     }
+
+//     // ─── Admin joins a waiting conversation ──────────────────────────────────
+
+//     @SubscribeMessage('support:join_as_admin')
+//     async handleAdminJoin(
+//       @ConnectedSocket() client: Socket,
+//       @MessageBody() conversationId: string,
+//     ) {
+//       const user = client.data.user;
+//       const userId = user?.id || user?.sub;
+//       const role: Role = user?.role;
+
+//       if (!userId || role !== Role.ADMIN) {
+//         client.emit('support:error', { message: 'Admins only' });
+//         return;
+//       }
+
+//       try {
+//         const { conversation, systemMessage } =
+//           await this.supportChatService.adminJoinConversation(
+//             conversationId,
+//             userId,
+//           );
+
+//         const room = `support-${conversationId}`;
+
+//         // Admin socket joins the room
+//         client.join(room);
+
+//         // Notify everyone in the room that admin joined
+//         this.server.to(room).emit('support:admin_joined', { conversation });
+//         this.server.to(room).emit('support:message', { message: systemMessage });
+
+//         // Notify all admins so they remove it from the waiting list
+//         this.server
+//           .to(ADMIN_ROOM)
+//           .emit('support:admin_took_conversation', { conversationId });
+//       } catch (error) {
+//         this.logger.error(`support:join_as_admin error: ${error.message}`);
+//         client.emit('support:error', { message: error.message });
+//       }
+//     }
+
+//     // ─── Close conversation ───────────────────────────────────────────────────
+
+//     @SubscribeMessage('support:close')
+//     async handleClose(
+//       @ConnectedSocket() client: Socket,
+//       @MessageBody() conversationId: string,
+//     ) {
+//       const user = client.data.user;
+//       const userId = user?.id || user?.sub;
+//       const role: Role = user?.role;
+
+//       if (!userId) return;
+
+//       try {
+//         const { conversation, systemMessage } =
+//           await this.supportChatService.closeConversation(
+//             conversationId,
+//             userId,
+//             role,
+//           );
+
+//         const room = `support-${conversationId}`;
+
+//         this.server.to(room).emit('support:message', { message: systemMessage });
+//         this.server.to(room).emit('support:closed', { conversation });
+//       } catch (error) {
+//         this.logger.error(`support:close error: ${error.message}`);
+//         client.emit('support:error', { message: error.message });
+//       }
+//     }
+
+//     // ─── Public helper for REST controller broadcasts ─────────────────────────
+
+//     broadcastToRoom(conversationId: string, event: string, data: any) {
+//       this.server.to(`support-${conversationId}`).emit(event, data);
+//     }
+
+//     notifyAdmins(event: string, data: any) {
+//       this.server.to(ADMIN_ROOM).emit(event, data);
+//     }
+//   }
+
+//   ---
+//   Step 6 — Create src/supportChat/supportChat.controller.ts
+
+//   import {
+//     Controller,
+//     Get,
+//     Post,
+//     Patch,
+//     Body,
+//     Param,
+//     Req,
+//     UseGuards,
+//   } from '@nestjs/common';
+//   import { SupportChatService } from './supportChat.service';
+//   import { SupportChatGateway } from './supportChat.gateway';
+//   import { SendSupportMessageDto } from './dto/send-message.dto';
+//   import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+//   import { RolesGuard } from '../auth/guards/roles.guard';
+//   import { IsAdmin } from '../common/decorators/roles.decorator';
+//   import { ResponseUtil } from '../common/utils/response.util';
+
+//   @Controller('support')
+//   @UseGuards(JwtAuthGuard, RolesGuard)
+//   export class SupportChatController {
+//     constructor(
+//       private readonly supportChatService: SupportChatService,
+//       private readonly supportChatGateway: SupportChatGateway,
+//     ) {}
+
+//     // ─── User/SP endpoints ────────────────────────────────────────────────────
+
+//     @Post('conversations')
+//     async startConversation(@Req() req: any) {
+//       const conversation = await this.supportChatService.startConversation(
+//         req.currentUser.id,
+//       );
+//       return ResponseUtil.success({ conversation }, 'Support conversation
+//   started');
+//     }
+
+//     @Get('conversations/my')
+//     async getMyConversations(@Req() req: any) {
+//       const conversations = await this.supportChatService.getMyConversations(
+//         req.currentUser.id,
+//       );
+//       return ResponseUtil.success(
+//         { conversations },
+//         'Conversations retrieved successfully',
+//       );
+//     }
+
+//     @Get('conversations/:id')
+//     async getConversation(@Req() req: any, @Param('id') id: string) {
+//       const conversation =
+//         await this.supportChatService.getConversationWithMessages(
+//           id,
+//           req.currentUser.id,
+//           req.currentUser.role,
+//         );
+//       return ResponseUtil.success(
+//         { conversation },
+//         'Conversation retrieved successfully',
+//       );
+//     }
+
+//     @Post('conversations/:id/messages')
+//     async sendMessage(
+//       @Req() req: any,
+//       @Param('id') id: string,
+//       @Body() dto: SendSupportMessageDto,
+//     ) {
+//       const { userMessage, botMessage } =
+//         await this.supportChatService.sendMessage(
+//           id,
+//           req.currentUser.id,
+//           dto.content,
+//           req.currentUser.role,
+//         );
+
+//       // Broadcast via WebSocket so other participants see it in real time
+//       this.supportChatGateway.broadcastToRoom(id, 'support:message', {
+//         message: userMessage,
+//       });
+//       if (botMessage) {
+//         this.supportChatGateway.broadcastToRoom(id, 'support:message', {
+//           message: botMessage,
+//         });
+//       }
+
+//       return ResponseUtil.success(
+//         { userMessage, botMessage },
+//         'Message sent successfully',
+//       );
+//     }
+
+//     @Patch('conversations/:id/escalate')
+//     async escalate(@Req() req: any, @Param('id') id: string) {
+//       const { conversation, systemMessage } =
+//         await this.supportChatService.escalateToAdmin(id, req.currentUser.id);
+
+//       this.supportChatGateway.broadcastToRoom(id, 'support:escalated', {
+//         conversation,
+//       });
+//       this.supportChatGateway.broadcastToRoom(id, 'support:message', {
+//         message: systemMessage,
+//       });
+//       this.supportChatGateway.notifyAdmins('support:new_waiting', {
+//         conversation,
+//       });
+
+//       return ResponseUtil.success(
+//         { conversation },
+//         'Escalated to human support. Please wait.',
+//       );
+//     }
+
+//     @Patch('conversations/:id/close')
+//     async close(@Req() req: any, @Param('id') id: string) {
+//       const { conversation, systemMessage } =
+//         await this.supportChatService.closeConversation(
+//           id,
+//           req.currentUser.id,
+//           req.currentUser.role,
+//         );
+
+//       this.supportChatGateway.broadcastToRoom(id, 'support:message', {
+//         message: systemMessage,
+//       });
+//       this.supportChatGateway.broadcastToRoom(id, 'support:closed', {
+//         conversation,
+//       });
+
+//       return ResponseUtil.success({ conversation }, 'Conversation closed');
+//     }
+
+//     // ─── Admin endpoints ──────────────────────────────────────────────────────
+
+//     @Get('admin/conversations')
+//     @IsAdmin()
+//     async getAdminConversations() {
+//       const data = await this.supportChatService.getAdminConversations();
+//       return ResponseUtil.success(data, 'Conversations retrieved successfully');
+//     }
+
+//     @Patch('admin/conversations/:id/join')
+//     @IsAdmin()
+//     async adminJoin(@Req() req: any, @Param('id') id: string) {
+//       const { conversation, systemMessage } =
+//         await this.supportChatService.adminJoinConversation(
+//           id,
+//           req.currentUser.id,
+//         );
+
+//       this.supportChatGateway.broadcastToRoom(id, 'support:admin_joined', {
+//         conversation,
+//       });
+//       this.supportChatGateway.broadcastToRoom(id, 'support:message', {
+//         message: systemMessage,
+//       });
+//       this.supportChatGateway.notifyAdmins('support:admin_took_conversation', {
+//         conversationId: id,
+//       });
+
+//       return ResponseUtil.success(
+//         { conversation },
+//         'You have joined the conversation',
+//       );
+//     }
+
+//     @Patch('admin/conversations/:id/close')
+//     @IsAdmin()
+//     async adminClose(@Req() req: any, @Param('id') id: string) {
+//       const { conversation, systemMessage } =
+//         await this.supportChatService.closeConversation(
+//           id,
+//           req.currentUser.id,
+//           req.currentUser.role,
+//         );
+
+//       this.supportChatGateway.broadcastToRoom(id, 'support:message', {
+//         message: systemMessage,
+//       });
+//       this.supportChatGateway.broadcastToRoom(id, 'support:closed', {
+//         conversation,
+//       });
+
+//       return ResponseUtil.success({ conversation }, 'Conversation closed');
+//     }
+//   }
+
+//   ---
+//   Step 7 — Create src/supportChat/supportChat.module.ts
+
+//   import { Module } from '@nestjs/common';
+//   import { JwtModule } from '@nestjs/jwt';
+//   import { ConfigModule } from '@nestjs/config';
+//   import { PrismaModule } from '../prisma/prisma.module';
+//   import { SupportChatService } from './supportChat.service';
+//   import { SupportChatGateway } from './supportChat.gateway';
+//   import { SupportChatController } from './supportChat.controller';
+
+//   @Module({
+//     imports: [JwtModule, ConfigModule, PrismaModule],
+//     providers: [SupportChatService, SupportChatGateway],
+//     controllers: [SupportChatController],
+//   })
+//   export class SupportChatModule {}
+
+//   ---
+//   Step 8 — Update src/app.module.ts
+
+//   Add this import line at the top with the other imports:
+//   import { SupportChatModule } from './supportChat/supportChat.module';
+
+//   Then add SupportChatModule to the imports array, after BotChatModule:
+//       BotChatModule,
+//       SupportChatModule,   // ← add this line
+
+//   ---
+//   Step 9 — Start the server
+
+//   npm run start:dev
+
+//   ---
+//   Summary of all WebSocket events (for your frontend)
+
+//   Connect to namespace: ws://your-host/support with auth: { token: "<jwt>" }
+
+//   CLIENT → SERVER
+//   ────────────────────────────────────────────────────────────────────
+//   support:join              { conversationId }    Join a room
+//   support:leave             { conversationId }    Leave a room
+//   support:send_message      { conversationId, content }
+//   support:escalate          conversationId        Request a human
+//   support:join_as_admin     conversationId        Admin claims conversation
+//   support:close             conversationId        End conversation
+
+//   SERVER → CLIENT
+//   ────────────────────────────────────────────────────────────────────
+//   support:message           { message }           New message (any sender)
+//   support:escalated         { conversation }      Status → WAITING
+//   support:admin_joined      { conversation }      Admin entered room
+//   support:admin_took_conversation { conversationId }  (admin room only)
+//   support:new_waiting       { conversation }      (admin room only)
+//   support:closed            { conversation }      Chat ended
+//   support:error             { message }           Something went wrong
+
+//   Summary of REST endpoints
+
+//   POST   /api/support/conversations              Start conversation
+//   GET    /api/support/conversations/my           My conversations
+//   GET    /api/support/conversations/:id          Conversation + messages
+//   POST   /api/support/conversations/:id/messages Send message
+//   PATCH  /api/support/conversations/:id/escalate Request human
+//   PATCH  /api/support/conversations/:id/close    Close
+
+//   GET    /api/support/admin/conversations        All chats (grouped)
+//   PATCH  /api/support/admin/conversations/:id/join   Admin joins
+//   PATCH  /api/support/admin/conversations/:id/close  Admin closes
+
+Testing the Support Chat System in Postman
+
+  ---
+  Prerequisites — Get a JWT Token
+
+  First login as a User and save the token.
+
+  POST http://localhost:3000/api/auth/login
+  {
+    "email": "user@example.com",
+    "password": "yourpassword"
+  }
+  Save the accessToken from the response. Repeat this
+  for an Admin account too (you'll need both tokens).
+
+  ---
+  Part 1 — REST API Tests
+
+  Set header on every request:
+  Authorization: Bearer <accessToken>
+
+  ---
+  1. Start a support conversation (as User)
+
+  POST http://localhost:3000/api/support/conversations
+
+  No body needed. Returns the conversation with a
+  welcome bot message.
+
+  Save the conversation.id — you'll need it for
+  everything below.
+
+  ---
+  2. Get your conversations
+
+  GET
+  http://localhost:3000/api/support/conversations/my
+
+  ---
+  3. Send a message to the bot
+
+  POST http://localhost:3000/api/support/conversations
+  /:id/messages
+  {
+    "content": "Hello, I need help with my order"
+  }
+  Response will have both your message and the bot's
+  reply.
+
+  ---
+  4. Send another message (bot continues responding)
+
+  POST http://localhost:3000/api/support/conversations
+  /:id/messages
+  {
+    "content": "Can I talk to a real person?"
+  }
+
+  ---
+  5. Escalate to admin
+
+  PATCH http://localhost:3000/api/support/conversation
+  s/:id/escalate
+
+  No body. Status changes to WAITING_FOR_ADMIN.
+
+  ---
+  6. View all conversations as Admin
+
+  Switch to the Admin token.
+
+  GET http://localhost:3000/api/support/admin/conversa
+  tions
+
+  Response is grouped:
+  {
+    "waiting": [...],
+    "active":  [...],
+    "closed":  [...]
+  }
+  Your conversation should appear in waiting.
+
+  ---
+  7. Admin joins the conversation
+
+  PATCH http://localhost:3000/api/support/admin/conver
+  sations/:id/join
+
+  No body. Status changes to ACTIVE_WITH_ADMIN.
+
+  ---
+  8. Admin sends a message
+
+  POST http://localhost:3000/api/support/conversations
+  /:id/messages
+  {
+    "content": "Hi! I'm a support agent. How can I
+  help you?"
+  }
+  Use the Admin token here.
+
+  ---
+  9. User replies back
+
+  Switch back to User token.
+
+  POST http://localhost:3000/api/support/conversations
+  /:id/messages
+  {
+    "content": "Thanks! My issue is resolved."
+  }
+
+  ---
+  10. Close the conversation
+
+  PATCH http://localhost:3000/api/support/conversation
+  s/:id/close
+
+  ---
+  Part 2 — WebSocket (Real-Time) Tests
+
+  Postman supports Socket.io. Use New → Socket.IO
+  request.
+
+  ---
+  Connect as User
+
+  - URL: http://localhost:3000/support
+  - Under Connection tab → add auth:
+
+  Key: auth
+  Value (JSON): {"token": "<user_accessToken>"}
+
+  Click Connect.
+
+  ---
+  Connect as Admin (open a second Socket.IO tab)
+
+  Same URL, use the admin token in auth. Admin
+  auto-joins the support-admins room on connect.
+
+  ---
+  WebSocket events to test
+
+  In the User tab — join the conversation room:
+
+  Event name: support:join
+  Message: "<conversationId>"
+
+  ---
+  Send a message:
+
+  Event name: support:send_message
+  Message:
+  {
+    "conversationId": "<conversationId>",
+    "content": "Hello from WebSocket!"
+  }
+
+  Listen for support:message on both tabs — you should
+   see the user message and the bot reply.
+
+  ---
+  Escalate to admin:
+
+  Event name: support:escalate
+  Message: "<conversationId>"
+
+  → Admin tab should receive support:new_waiting event
+   automatically (because admin is in the
+  support-admins room).
+
+  ---
+  Admin joins (in Admin tab):
+
+  Event name: support:join_as_admin
+  Message: "<conversationId>"
+
+  → User tab should receive support:admin_joined
+  event.
+
+  ---
+  Admin sends a message (in Admin tab):
+
+  Event name: support:send_message
+  Message:
+  {
+    "conversationId": "<conversationId>",
+    "content": "Hello from Admin!"
+  }
+
+  → User tab should receive support:message.
+
+  ---
+  Close conversation:
+
+  Event name: support:close
+  Message: "<conversationId>"
+
+  → Both tabs receive support:closed.
+
+  ---
+  Quick Status Flow Reference
+
+  Start conversation  →  status: BOT
+  Send messages       →  bot replies automatically
+  Escalate            →  status: WAITING_FOR_ADMIN
+  Admin joins         →  status: ACTIVE_WITH_ADMIN
+  Close               →  status: CLOSED

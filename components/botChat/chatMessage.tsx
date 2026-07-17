@@ -31,7 +31,7 @@ export const ChatMessages = ({ messages } : Props ) => {
         {messages.map((message, index) => (<div 
         ref={ index === messages.length -1 ? lastMessageRef : null}
         onCopy={onCopyMessage}
-        className={`px-3 py-1 max-w-md rounded-xl text-2xl  ${
+        className={`px-3 py-1 max-w-md rounded-xl text-1xl  ${
             message.role === 'user' ? 'bg-blue-600 text-white self-end' : 'bg-gray-100 text-black self-start'
             }`} key={index}>
             <ReactMarkdown>
