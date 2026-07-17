@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   useReactTable,
@@ -1270,5 +1270,9 @@ export default function OrdersPage() {
     return <AdminOrders />;
   }
 
-  return <ProviderOrders />;
+  return (
+    <Suspense fallback={null}>
+      <ProviderOrders />
+    </Suspense>
+  );
 }

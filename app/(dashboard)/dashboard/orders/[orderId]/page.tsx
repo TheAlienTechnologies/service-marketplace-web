@@ -251,10 +251,8 @@ function ProviderOrderDetails() {
   );
 }
 
-export default function OrderDetailsPage({
-  params,
-}: {
-  params: { orderId: string };
+export default function OrderDetailsPage({}: {
+  params: Promise<{ orderId: string }>;
 }) {
   const { user } = useAuthStore();
 

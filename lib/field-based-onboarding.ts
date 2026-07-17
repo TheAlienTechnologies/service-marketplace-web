@@ -1,4 +1,7 @@
-import { AuthStep, OnboardingStatus } from '@/types/auth';
+import { AuthStep, UserAuthStep, OnboardingStatus } from '@/types/auth';
+
+// Onboarding steps live in UserAuthStep, so utilities here work with the union.
+type OnboardingAuthStep = AuthStep | UserAuthStep;
 import { apiService } from './api';
 
 /**
@@ -8,7 +11,7 @@ import { apiService } from './api';
 /**
  * Get the next onboarding step based on backend field validation
  */
-export async function getNextOnboardingStep(): Promise<AuthStep | null> {
+export async function getNextOnboardingStep(): Promise<OnboardingAuthStep | null> {
   try {
     const status = await apiService.getOnboardingStatus();
     
@@ -57,8 +60,8 @@ export async function getOnboardingStatus(): Promise<OnboardingStatus | null> {
 /**
  * Map backend step names to frontend AuthStep values
  */
-function mapBackendStepToFrontendStep(backendStep: string): AuthStep {
-  const stepMap: Record<string, AuthStep> = {
+function mapBackendStepToFrontendStep(backendStep: string): OnboardingAuthStep {
+  const stepMap: Record<string, OnboardingAuthStep> = {
     'email_verification': 'verify-email',
     'basic_profile': 'onboarding-profile',
     'location': 'onboarding-location',
@@ -73,8 +76,8 @@ function mapBackendStepToFrontendStep(backendStep: string): AuthStep {
 /**
  * Get user-friendly message for onboarding step
  */
-export function getOnboardingStepMessage(step: AuthStep): string {
-  const messages: Record<AuthStep, string> = {
+export function getOnboardingStepMessage(step: OnboardingAuthStep): string {
+  const messages: Record<OnboardingAuthStep, string> = {
     'signin': 'Please sign in to continue.',
     'signup': 'Create your account to get started.',
     'verify-email': 'Please verify your email address to continue.',

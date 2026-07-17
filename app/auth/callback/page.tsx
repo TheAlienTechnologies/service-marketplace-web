@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
 import { apiService } from '@/lib/api';
@@ -9,7 +9,7 @@ import { toast } from 'react-toastify';
 import { getOnboardingStatus } from '@/lib/field-based-onboarding';
 import { mapBackendStepToFrontendStep } from '@/types/auth';
 
-export default function AuthCallback() {
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isProcessing, setIsProcessing] = useState(true);
@@ -172,4 +172,34 @@ export default function AuthCallback() {
   }
 
   return null;
+}
+
+function AuthCallbackFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="text-center">
+        <div className="w-16 h-16 mx-auto mb-4">
+          <img
+            src="/assets/logo/logo.svg"
+            alt="Pavodah Logo"
+            className="w-full h-full animate-pulse"
+          />
+        </div>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          Completing your sign in...
+        </h2>
+        <p className="text-gray-600 dark:text-gray-400">
+          Please wait while we set up your account.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default function AuthCallback() {
+  return (
+    <Suspense fallback={<AuthCallbackFallback />}>
+      <AuthCallbackContent />
+    </Suspense>
+  );
 }

@@ -97,10 +97,8 @@ const disputeDetail = {
   ],
 };
 
-export default function DisputeDetailsPage({
-  params,
-}: {
-  params: { disputeId: string };
+export default function DisputeDetailsPage({}: {
+  params: Promise<{ disputeId: string }>;
 }) {
   const [activeTab, setActiveTab] = useState("client");
 
