@@ -4,9 +4,11 @@ import { useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { SupportConversation, SupportMessage } from "@/types/support";
 
+// Strip a trailing "/api" only — anchoring to the end avoids mangling hosts
+// whose subdomain contains "api" (e.g. https://api-dev.example.com/api).
 const WS_BASE_URL = (
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api"
-).replace("/api", "");
+).replace(/\/api\/?$/, "");
 
 export interface SupportSocketCallbacks {
   onMessage?: (message: SupportMessage) => void;
